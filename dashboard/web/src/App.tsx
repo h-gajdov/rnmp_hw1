@@ -1,43 +1,71 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ActiveIncidents } from './components/ActiveIncidents'
 import { BoroughStrip } from './components/BoroughStrip'
-import { Gantry } from './components/Gantry'
+import { FlowPanel } from './components/FlowPanel'
+import { Header } from './components/Header'
 import { IncidentCounters } from './components/IncidentCounters'
 import { IncidentFeed } from './components/IncidentFeed'
 import { LinkPanel } from './components/LinkPanel'
-import { NetworkSummary } from './components/NetworkSummary'
+import { MapLegend } from './components/MapLegend'
 import { TrafficMap } from './components/TrafficMap'
 import { useLinks } from './hooks/useLinks'
 import { useLiveFeed } from './hooks/useLiveFeed'
+import { useBoroughShapes } from './lib/boroughs'
+import type { LayerGroup } from './lib/mapLayers'
 
 export default function App() {
   const geojson = useLinks()
+  const boroughShapes = useBoroughShapes()
   const { state, health } = useLiveFeed()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [focusBorough, setFocusBorough] = useState<string | null>(null)
+  const [hoverBorough, setHoverBorough] = useState<string | null>(null)
+  const [layers, setLayers] = useState<Record<LayerGroup, boolean>>({ flow: true, incidents: true, boroughs: true })
+
+  const toggleLayer = useCallback((group: LayerGroup) => setLayers((l) => ({ ...l, [group]: !l[group] })), [])
+  const clearFocus = useCallback(() => setFocusBorough(null), [])
 
   const totalLinks = geojson?.features.length ?? 0
+  const reporting = Object.keys(state.links).filter((id) => !(id in state.silent)).length
   const selected = selectedId ? geojson?.features.find((f) => f.properties.link_id === selectedId) : undefined
+  const boroughNow = useMemo(
+    () => Object.fromEntries(Object.entries(state.boroughs).map(([name, s]) => [name, s[s.length - 1]])),
+    [state.boroughs],
+  )
 
   return (
     <div className="app">
-      <Gantry eventClock={state.eventClock} linkCount={totalLinks} health={health} />
+      <Header eventClock={state.eventClock} linkCount={totalLinks} reporting={reporting} health={health} />
 
       <main className="stage">
         {geojson ? (
           <TrafficMap
             geojson={geojson}
+            boroughShapes={boroughShapes}
+            boroughNow={boroughNow}
             links={state.links}
             active={state.active}
             silent={state.silent}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            focusBorough={focusBorough}
+            onFocusBorough={setFocusBorough}
+            hoverBorough={hoverBorough}
+            onHoverBorough={setHoverBorough}
+            layers={layers}
           />
         ) : (
           <div className="map map--loading">
             <p>Loading road geometry. The producer writes data/links.geojson on its first start.</p>
           </div>
         )}
-        <NetworkSummary totalLinks={totalLinks} links={state.links} silent={state.silent} />
+        <MapLegend
+          totalLinks={totalLinks}
+          links={state.links}
+          silent={state.silent}
+          layers={layers}
+          onToggle={toggleLayer}
+        />
         {selected && (
           <LinkPanel
             feature={selected}
@@ -49,13 +77,27 @@ export default function App() {
         )}
       </main>
 
-      <aside className="side">
-        <IncidentCounters counts={state.counts} />
-        <ActiveIncidents active={state.active} eventClock={state.eventClock} onSelect={setSelectedId} />
-        <IncidentFeed incidents={state.recent} onSelect={setSelectedId} />
-      </aside>
+      <BoroughStrip
+        boroughs={state.boroughs}
+        active={state.active}
+        focus={focusBorough}
+        hover={hoverBorough}
+        onFocus={setFocusBorough}
+        onHover={setHoverBorough}
+      />
 
-      <BoroughStrip boroughs={state.boroughs} />
+      <aside className="side">
+        <FlowPanel boroughs={state.boroughs} history={state.history} links={state.links} silent={state.silent} />
+        <IncidentCounters counts={state.counts} />
+        <ActiveIncidents
+          active={state.active}
+          eventClock={state.eventClock}
+          focus={focusBorough}
+          onClearFocus={clearFocus}
+          onSelect={setSelectedId}
+        />
+        <IncidentFeed incidents={state.recent} focus={focusBorough} onClearFocus={clearFocus} onSelect={setSelectedId} />
+      </aside>
     </div>
   )
 }

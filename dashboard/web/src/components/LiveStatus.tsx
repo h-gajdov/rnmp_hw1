@@ -5,7 +5,7 @@ const IDLE_AFTER_MS = 10_000
 function describe({ status, lastMessageAt }: FeedHealth, now: number) {
   if (status === 'connecting') return { tone: 'wait', label: 'Connecting' }
   if (status === 'reconnecting') return { tone: 'down', label: 'Reconnecting' }
-  if (!lastMessageAt || now - lastMessageAt > IDLE_AFTER_MS) return { tone: 'idle', label: 'Connected, stream idle' }
+  if (!lastMessageAt || now - lastMessageAt > IDLE_AFTER_MS) return { tone: 'idle', label: 'Stream idle' }
   return { tone: 'live', label: 'Live' }
 }
 
@@ -21,13 +21,13 @@ export function LiveStatus({ health }: { health: FeedHealth }) {
   const { tone, label } = describe(health, now)
   return (
     <div className={`live live--${tone}`} role="status">
-      <span className="live__dot" aria-hidden="true" />
-      <span className="live__label">{label}</span>
-      <span className="live__stat">
-        <b>{health.messagesPerSecond.toFixed(1)}</b> msg/s
+      <span className="live__badge">
+        <span className="live__dot" aria-hidden="true" />
+        {label}
       </span>
-      <span className="live__stat">
-        {health.lastMessageAt ? `last message ${age(now - health.lastMessageAt)}` : 'no messages yet'}
+      <span className="live__stats">
+        <span><b>{health.messagesPerSecond.toFixed(1)}</b> msg/s</span>
+        <span>{health.lastMessageAt ? `last ${age(now - health.lastMessageAt)}` : 'no messages yet'}</span>
       </span>
     </div>
   )
