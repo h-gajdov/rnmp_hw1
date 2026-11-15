@@ -17,8 +17,10 @@ Flink ──► Kafka topics ──► Python bridge ──Socket.IO (WebSocket)
   browsers immediately (no polling, no batching; measured ~2–4 ms from Kafka write to
   Socket.IO delivery). When a browser connects or reconnects it first gets the full
   `snapshot`, so a freshly opened page is populated at once. The same process serves
-  `GET /api/links` (the static `data/links.geojson`), `GET /api/snapshot`, `GET /api/health`
-  and, in production, the built React app.
+  `GET /api/links` (the static `data/links.geojson`), `GET /api/snapshot`, `GET /api/health`,
+  the time-travel endpoints below and, in production, the built React app. An alert that
+  arrives again with the same `alert_id` (the Flink sinks are at-least-once, and a replay into
+  the same topics repeats the day) is ignored, so it is neither counted twice nor pushed.
 - **Web app** (`web/`, React + TypeScript + Vite): `useLiveFeed` holds the Socket.IO
   connection (auto-reconnect) and a reducer that mirrors the bridge state; incoming events
   are applied in 30 ms batches so a burst of 125 windows causes one render. The map is
@@ -37,6 +39,19 @@ Flink ──► Kafka topics ──► Python bridge ──Socket.IO (WebSocket)
   weighted by readings) and the share of links at each congestion level per window (from the
   link history). Both are computed in the browser from the existing topics; the message
   contract is unchanged. The flow, incident and borough layers can be switched off in the legend.
+
+- **Time travel**: the bar in the header spans everything the bridge remembers (normally the
+  whole replayed day) with the network speed per 5 minutes drawn under it, so the rush hours
+  are visible at a glance. Drag it, use the arrow keys (5 min) / Page Up/Down (1 h), or click
+  a preset (*Night* 03:00, *AM rush* 08:00, *Lunch* 12:30, *PM rush* 17:30) and the whole page
+  (map, counters, incidents, alert log, charts, link details) shows that moment; the clock turns
+  blue and reads "Looking back". ▶ plays the day in 5-minute steps; *Now* (or dragging to the
+  right end) returns to the live stream, which keeps updating in the background meanwhile.
+  The bridge (`timeline.py`) logs every message of the last `--history-hours` of event time
+  and rebuilds the state at time *t* by replaying the messages up to *t*, in event-time order,
+  through the same `DashboardState` rules as the live view (`GET /api/state?at=<epoch ms>`,
+  ~70 ms for a day, run in a worker thread). `GET /api/timeline` returns the range and the
+  network series. The page keeps one request in flight, so scrubbing never floods the bridge.
 
 Congestion levels follow the contract: ratio = avg speed / free-flow speed,
 `>= 0.75` free flow (green), `>= 0.5` moderate (yellow), `>= 0.3` heavy (orange), else severe (red).
@@ -94,9 +109,12 @@ Every flag can also be set with an environment variable (the flag wins).
 | `--host` / `--port` | `HOST` / `PORT` | `0.0.0.0` / `8000` |
 | `--links-geojson` | `LINKS_GEOJSON` | `data/links.geojson` (image: `/data/links.geojson`) |
 | `--web-dist` | `WEB_DIST` | `dashboard/web/dist` |
+| `--history-hours` | `HISTORY_HOURS` | `24` (how far back the time bar reaches) |
 
 `--offset latest` shows only what happens after the bridge starts (plus whatever it has
 collected since); use `--offset earliest` to rebuild the picture from everything in the topics.
+The history for time travel lives in memory, so it is rebuilt the same way after a restart
+(the compose stack uses `earliest`, so the whole day is available again).
 
 The bridge is safe to start before everything else: it retries until Kafka is reachable,
 subscribes with a topic *pattern* so it never auto-creates topics and picks them up once
@@ -123,6 +141,6 @@ Other flags: `--start 2026-10-01T06:30:00` (New York time), `--incident-rate`,
 ## Tests
 
 ```bash
-cd dashboard/server && uv run pytest        # snapshot/state logic, no Kafka needed
+cd dashboard/server && uv run pytest        # snapshot/state and time-travel logic, no Kafka needed
 cd dashboard/web && npm run build           # type check (tsc) + production build
 ```

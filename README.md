@@ -12,7 +12,8 @@ A Flink 2.3 job (Java 17) processes it in event time:
   `SPEED_DROP`, `PERSISTENT_CONGESTION`, `RECOVERY` and `SENSOR_SILENT` alerts.
 
 All results are JSON messages in Kafka topics. A live dashboard (React + a Python Socket.IO bridge) shows them on
-a map while the stream is flowing. Everything starts with one `docker compose up`.
+a map while the stream is flowing, and its time bar travels back through the day (night, lunch, rush hours).
+Everything starts with one `docker compose up`.
 
 ![Live dashboard](docs/img/dashboard.png)
 
