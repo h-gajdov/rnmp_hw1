@@ -1,0 +1,18 @@
+[project]
+name = "traffic-dashboard-bridge"
+version = "0.1.0"
+description = "Kafka -> Socket.IO bridge for the live NYC traffic dashboard"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "aiokafka>=0.12",
+    "fastapi>=0.115",
+    "python-socketio>=5.11",
+    "uvicorn>=0.32",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
