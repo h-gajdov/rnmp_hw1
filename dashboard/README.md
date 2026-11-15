@@ -22,9 +22,21 @@ Flink ──► Kafka topics ──► Python bridge ──Socket.IO (WebSocket)
 - **Web app** (`web/`, React + TypeScript + Vite): `useLiveFeed` holds the Socket.IO
   connection (auto-reconnect) and a reducer that mirrors the bridge state; incoming events
   are applied in 30 ms batches so a burst of 125 windows causes one render. The map is
-  MapLibre GL on the free CARTO dark basemap; link colors use feature state and fade over
+  MapLibre GL on the free CARTO dark basemap (retinted); link colors use feature state and fade over
   ~1 s to each new window. The header shows the stream's event-time clock (New York time)
   and the connection health (Live / Reconnecting, messages per second, age of last message).
+- **Boroughs**: the five boroughs are drawn as tinted, labelled areas from
+  `web/public/boroughs.geojson` (NYC Open Data "Borough Boundaries", water-clipped, simplified to
+  ~30 m with shapely, 76 KB, served as a static file of the built app). Hovering a borough on the
+  map or its card in the bottom strip highlights it on both; clicking focuses it: the map zooms to
+  it, the other boroughs and their links recede and the incident lists are narrowed to it.
+- **Traffic flow**: dots move along every link at a screen speed proportional to the link's
+  latest `avg_speed_mph` (silent sensors and links without data have none), in the travel
+  direction from the link name (N/S/E/W), since the DOT polylines are not always drawn that way.
+  The *Traffic flow* panel shows the network speed per 5-minute window (borough windows combined,
+  weighted by readings) and the share of links at each congestion level per window (from the
+  link history). Both are computed in the browser from the existing topics; the message
+  contract is unchanged. The flow, incident and borough layers can be switched off in the legend.
 
 Congestion levels follow the contract: ratio = avg speed / free-flow speed,
 `>= 0.75` free flow (green), `>= 0.5` moderate (yellow), `>= 0.3` heavy (orange), else severe (red).

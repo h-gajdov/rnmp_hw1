@@ -251,15 +251,20 @@ of +∞ that fires all windows and timers (we keep the source unbounded because 
 
 ![Dashboard](img/dashboard.png)
 
-<p class="caption">Figure 2. Live dashboard at http://localhost:8000 during the morning of 2026-10-01
+<p class="caption">Figure 2. Live dashboard at http://localhost:8000 near the end of 2026-10-01
 (stream time in the header).</p>
 
 A Python bridge (`dashboard/server`, `aiokafka` + `python-socketio`) consumes the output topics, keeps an
 in-memory snapshot (latest window per link, open incidents, counters, borough history) and pushes every record
 to the browsers over Socket.IO as soon as it is read; a newly connected browser first receives the full snapshot.
 The React app (`dashboard/web`, MapLibre GL) colors every road segment by its congestion level from
-`traffic-link-stats`, marks open incidents, and shows alert counters, the open incidents, the alert log and
-per-borough speed charts from `traffic-borough-stats`. Clicking a segment opens its speed history and alerts.
+`traffic-link-stats`, marks open incidents, and draws the five boroughs as tinted, labelled areas (simplified NYC
+Open Data boundaries bundled with the app). Small dots move along every segment at a speed proportional to its
+measured average speed, so the traffic flow is visible on the map. The side panel shows the network-wide flow
+(average speed per 5-minute window and the share of segments at each congestion level, both computed in the
+browser from the existing topics), alert counters, the open incidents and the alert log; the bottom strip shows
+per-borough speed charts from `traffic-borough-stats`. Clicking a borough (on the map or in the strip) zooms to
+it and narrows the incident lists to it; clicking a segment opens its speed history and alerts.
 
 ## 9. How to run
 
