@@ -22,8 +22,12 @@
         <junit.version>5.11.4</junit.version>
         <main.class>mk.ukim.finki.rnmp.traffic.TrafficIncidentJob</main.class>
         <!-- Flink core is "provided": the cluster already has it, so it is not packed into the jar.
-             The "local" profile below switches it to "compile" for runs from the terminal. -->
+             The local run still sees it: Maven's compile classpath includes "provided" dependencies. -->
         <flink.scope>provided</flink.scope>
+        <!-- program arguments for the local run, given with -Dexec.args (see README.md) -->
+        <exec.args></exec.args>
+        <!-- the module opens Flink's own start scripts give the JVM on Java 17+ -->
+        <jvm.opens>--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED</jvm.opens>
     </properties>
 
     <dependencies>
@@ -67,24 +71,22 @@
             <version>1.7.36</version>
             <scope>${flink.scope}</scope>
         </dependency>
-        <!-- Logging backend, so you see log lines when running locally -->
+        <!-- Logging backend, so you see log lines when running locally. "compile" so the local run sees it;
+             the shade plugin leaves it out of the fat jar (the cluster has its own). -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j.version}</version>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- Tests: JUnit 5 + Flink's operator test harnesses -->
@@ -161,16 +163,19 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Local run with an embedded mini-cluster:
-                 ./mvnw -q -Plocal compile exec:java -Dexec.args="..." -->
+            <!-- Local run with an embedded mini-cluster, in a separate JVM ("java" from the PATH, Java 17):
+                 ./mvnw -q compile exec:exec -Dexec.args="(program arguments)"
+                 (exec:java would run Flink inside Maven's own class loader, where Flink's mini-cluster
+                 cannot find its own classes when the job is submitted.) -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <mainClass>${main.class}</mainClass>
-                    <classpathScope>runtime</classpathScope>
-                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <executable>java</executable>
+                    <!-- the compile classpath also contains the "provided" Flink jars -->
+                    <classpathScope>compile</classpathScope>
+                    <commandlineArgs>${jvm.opens} -classpath %classpath ${main.class} ${exec.args}</commandlineArgs>
                 </configuration>
             </plugin>
         </plugins>
@@ -184,11 +189,6 @@
             <activation>
                 <property><name>idea.version</name></property>
             </activation>
-            <properties><flink.scope>compile</flink.scope></properties>
-        </profile>
-        <!-- Same thing from the terminal: -Plocal puts Flink itself on the classpath for exec:java -->
-        <profile>
-            <id>local</id>
             <properties><flink.scope>compile</flink.scope></properties>
         </profile>
     </profiles>
