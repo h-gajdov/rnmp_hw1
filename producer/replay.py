@@ -136,18 +136,6 @@ def shift_days(readings: list, days: int) -> list:
     return out
 
 
-def days_after(readings: list, existing_max) -> int:
-    """Smallest number of whole days to shift `readings` (sorted by event time) so that the first
-    one comes after `existing_max`, the newest event time already in the topic (None = empty).
-    Used so a restarted producer continues on the next day instead of replaying the same one."""
-    if existing_max is None or not readings:
-        return 0
-    n = 0
-    while shift_days(readings[:1], n)[0].event_time <= existing_max:
-        n += 1
-    return n
-
-
 # ---------------------------------------------------------------- disorder scheduler
 
 @dataclass(frozen=True)

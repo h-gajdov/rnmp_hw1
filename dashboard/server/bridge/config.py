@@ -63,7 +63,7 @@ def parse_args(argv=None):
     p.add_argument("--web-dist", type=Path,
                    default=Path(_env("WEB_DIST", str(REPO_ROOT / "dashboard" / "web" / "dist"))),
                    help="built React app to serve (production mode)")
-    p.add_argument("--history-hours", type=float, default=float(_env("HISTORY_HOURS", "168")),
+    p.add_argument("--history-hours", type=float, default=float(_env("HISTORY_HOURS", "24")),
                    help="how much event time the dashboard can travel back over")
     a = p.parse_args(argv)
     return Config(

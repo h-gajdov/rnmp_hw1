@@ -101,21 +101,6 @@ class DashboardState:
         if event_time and event_time > self.event_clock:
             self.event_clock = event_time
 
-    def copy(self):
-        """An independent copy (for the time-travel checkpoints). The messages are
-        shared: they are never modified, only the containers holding them."""
-        c = DashboardState.__new__(DashboardState)
-        c.__dict__.update(self.__dict__)
-        c.links = dict(self.links)
-        c.link_history = {k: deque(v, maxlen=v.maxlen) for k, v in self.link_history.items()}
-        c.boroughs = {b: dict(series) for b, series in self.boroughs.items()}
-        c.active_incidents = dict(self.active_incidents)
-        c.silent_links = dict(self.silent_links)
-        c.recent_incidents = deque(self.recent_incidents, maxlen=self.recent_incidents.maxlen)
-        c.incident_counts = Counter(self.incident_counts)
-        c.seen_alerts = set(self.seen_alerts)
-        return c
-
     # ---- snapshot -------------------------------------------------------
 
     def snapshot(self):

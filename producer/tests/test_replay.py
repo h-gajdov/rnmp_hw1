@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from replay import Reading, clean_rows, days_after, plan_schedule, shift_days, skip_until, to_epoch_ms  # noqa: E402
+from replay import Reading, clean_rows, plan_schedule, shift_days, skip_until, to_epoch_ms  # noqa: E402
 
 
 def row(link_id="4616253", speed="42.25", status="0", data_as_of="2026-10-01T00:28:10.000", travel_time="60"):
@@ -62,19 +62,6 @@ def test_skip_until_and_shift_days():
     shifted = shift_days(readings, 1)
     assert shifted[0].data_as_of == "2026-10-02T07:59:00.000"
     assert shifted[0].event_time - readings[0].event_time == 86_400_000
-
-
-def test_days_after_continues_on_the_next_free_day():
-    readings, _ = clean_rows([row(data_as_of="2026-10-01T00:00:06.000"), row(data_as_of="2026-10-01T23:58:12.000")])
-    assert days_after(readings, None) == 0  # empty topic
-    assert days_after(readings, readings[0].event_time - 1) == 0  # topic is older
-    assert days_after(readings, readings[-1].event_time) == 1  # the same day is already there
-    stopped_early = to_epoch_ms("2026-10-01T14:00:00.000")
-    assert days_after(readings, stopped_early) == 1
-    two_runs = to_epoch_ms("2026-10-02T23:58:12.000")
-    assert days_after(readings, two_runs) == 2
-    # the first reading of the shifted replay is after everything in the topic
-    assert shift_days(readings, days_after(readings, two_runs))[0].event_time > two_runs
 
 
 # ---------------------------------------------------------------- disorder scheduler

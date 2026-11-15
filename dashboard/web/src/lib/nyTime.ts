@@ -23,6 +23,9 @@ function offset(ms: number) {
   return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000
 }
 
+/** New York hour of day (0-23) at `ms`. */
+export const nyHour = (ms: number) => wallClock(ms).hour
+
 /** `hour:minute` New York time on the New York day that contains `ms`. */
 export function nyTimeOnDayOf(ms: number, hour: number, minute: number) {
   const p = wallClock(ms)
@@ -31,22 +34,8 @@ export function nyTimeOnDayOf(ms: number, hour: number, minute: number) {
   return wall - offset(guess) // second pass settles DST days
 }
 
-
-/** New York midnight that starts the day containing `ms`. */
-export const nyDayStart = (ms: number) => nyTimeOnDayOf(ms, 0, 0)
-
-/** New York midnight after the day that starts at `dayStart` (23 or 25 h later on DST days). */
-export const nyNextDay = (dayStart: number) => nyTimeOnDayOf(dayStart + 30 * HOUR, 0, 0)
-
-/** Starts of every New York day touched by [start, end]. */
-export function nyDays(start: number, end: number) {
-  const days: number[] = []
-  for (let d = nyDayStart(start); d <= end; d = nyNextDay(d)) days.push(d)
-  return days
-}
-
-/** The same New York time of day as `ms`, on the day that starts at `dayStart`. */
-export function sameTimeOnDay(ms: number, dayStart: number) {
-  const p = wallClock(ms)
-  return nyTimeOnDayOf(dayStart, p.hour, p.minute)
+/** The latest moment at or before `end` that was `hour:minute` in New York. */
+export function latestOccurrence(end: number, hour: number, minute: number) {
+  const today = nyTimeOnDayOf(end, hour, minute)
+  return today <= end ? today : nyTimeOnDayOf(end - DAY, hour, minute)
 }

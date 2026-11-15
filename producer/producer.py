@@ -12,10 +12,10 @@ import signal
 import sys
 import time
 
-from confluent_kafka import Consumer, KafkaException, Producer, TopicPartition
+from confluent_kafka import KafkaException, Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 
-from replay import days_after, format_epoch_ms, load_readings, plan_schedule, shift_days, skip_until, parse_local
+from replay import format_epoch_ms, load_readings, plan_schedule, shift_days, skip_until, parse_local
 
 
 def env(name, default, cast=str):
@@ -46,9 +46,6 @@ def parse_args(argv=None):
     a("--start-at", default=env("START_AT", None), help="skip to this NY time of day, HH:MM[:SS] [START_AT]")
     a("--loop", action="store_true", default=env("LOOP", False, bool),
       help="replay forever, shifting the data one day later each round [LOOP]")
-    a("--continue", dest="continue_", action=argparse.BooleanOptionalAction, default=env("CONTINUE", True, bool),
-      help="if the topic already holds these days, replay whole days later so event time keeps moving"
-           " forward (--no-continue: replay the same days again) [CONTINUE]")
     a("--progress-s", type=float, default=env("PROGRESS_S", 5.0, float), help="seconds between progress lines [PROGRESS_S]")
     a("--kafka-wait-s", type=float, default=env("KAFKA_WAIT_S", 120.0, float),
       help="how long to wait for Kafka at startup [KAFKA_WAIT_S]")
@@ -89,44 +86,6 @@ def ensure_topic(admin: AdminClient, topic: str, partitions: int, timeout_s: flo
             raise
 
 
-def newest_event_time(bootstrap: str, topic: str, timeout_s: float = 60.0):
-    """Event time of the newest reading already in the topic, None if it is empty.
-
-    Scans the whole topic once at startup (~20k small records per replayed day, about a
-    second): earlier runs may have replayed overlapping days, so the last records of a
-    partition are not necessarily the newest in event time."""
-    consumer = Consumer({"bootstrap.servers": bootstrap, "group.id": "producer-probe", "enable.auto.commit": False})
-    try:
-        metadata = consumer.list_topics(topic, timeout=10)
-        partitions = metadata.topics[topic].partitions if topic in metadata.topics else {}
-        start, end = [], {}
-        for p in partitions:
-            low, high = consumer.get_watermark_offsets(TopicPartition(topic, p), timeout=10)
-            if high > low:
-                start.append(TopicPartition(topic, p, low))
-                end[p] = high
-        if not start:
-            return None
-        consumer.assign(start)
-        newest, deadline = None, time.monotonic() + timeout_s
-        while end and time.monotonic() < deadline:
-            for msg in consumer.consume(num_messages=5000, timeout=0.5):
-                if msg.error():
-                    continue
-                try:
-                    t = int(json.loads(msg.value())["event_time"])
-                    newest = t if newest is None else max(newest, t)
-                except (ValueError, KeyError, TypeError):
-                    pass
-                if msg.offset() + 1 >= end.get(msg.partition(), 0):
-                    end.pop(msg.partition(), None)
-        if end:
-            log(f"WARNING: could not read all of {topic} in {timeout_s:.0f}s, using what was read")
-        return newest
-    finally:
-        consumer.close()
-
-
 # ---------------------------------------------------------------- replay loop
 
 class Stats:
@@ -148,29 +107,28 @@ class Stats:
         self.last_report = time.monotonic()
 
 
-def rounds(readings, args, offset_days=0):
-    """Yield the schedule for each replay round (one round unless --loop), all shifted
-    `offset_days` days later (see --continue)."""
+def rounds(readings, args):
+    """Yield the schedule for each replay round (one round unless --loop)."""
     first = skip_until(readings, args.start_at) if args.start_at else readings
     days = (parse_local(readings[-1].data_as_of).date() - parse_local(readings[0].data_as_of).date()).days + 1
     max_delay_ms = int(args.max_delay_s * 1000)
     n = 0
     while True:
-        batch = shift_days(first, offset_days) if n == 0 else shift_days(readings, offset_days + n * days)
+        batch = first if n == 0 else shift_days(readings, n * days)
         yield plan_schedule(batch, args.disorder_ratio, max_delay_ms, seed=args.seed + n)
         n += 1
         if not args.loop:
             return
 
 
-def replay(producer: Producer, readings, args, stats: Stats, offset_days=0):
+def replay(producer: Producer, readings, args, stats: Stats):
     def on_delivery(err, _msg):
         if err is not None:
             stats.failed += 1
 
     wall_start = None    # wall clock (monotonic) at the first record
     replay_start = None  # release time of the first record
-    for schedule in rounds(readings, args, offset_days):
+    for schedule in rounds(readings, args):
         for item in schedule:
             if args.limit and stats.sent >= args.limit:
                 return
@@ -223,21 +181,11 @@ def main(argv=None):
         f" up to {args.max_delay_s:g}s, seed {args.seed}")
 
     ensure_topic(AdminClient({"bootstrap.servers": args.bootstrap}), args.topic, args.partitions, args.kafka_wait_s)
-
-    offset_days = 0
-    if args.continue_:
-        newest = newest_event_time(args.bootstrap, args.topic)
-        first = skip_until(readings, args.start_at) if args.start_at else readings
-        offset_days = days_after(first, newest)
-        if offset_days:
-            log(f"{args.topic} already holds readings up to {format_epoch_ms(newest)}: replaying {offset_days}"
-                f" day(s) later, from {format_epoch_ms(shift_days(first[:1], offset_days)[0].event_time)},"
-                f" so event time keeps moving forward (CONTINUE=false replays the same days again)")
     producer = Producer({"bootstrap.servers": args.bootstrap, "linger.ms": 20, "acks": "all"})
 
     stats = Stats()
     try:
-        replay(producer, readings, args, stats, offset_days)
+        replay(producer, readings, args, stats)
     except KeyboardInterrupt:
         log("interrupted, flushing ...")
     finally:
