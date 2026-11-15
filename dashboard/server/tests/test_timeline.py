@@ -1,9 +1,11 @@
 import json
+import random
 
 import pytest
 from test_state import borough, incident, link_stats
 
-from bridge.timeline import Timeline
+from bridge.state import DashboardState
+from bridge.timeline import APPLY, Timeline, event_time_of
 
 MIN = 60_000
 
@@ -70,12 +72,62 @@ def test_malformed_message_is_not_logged():
     tl = Timeline()
     with pytest.raises(KeyError):
         tl.apply("link_stats", {"link_id": "1"})
-    assert not tl.log
+    assert not tl.entries
 
 
 def test_duplicate_alert_is_not_logged_or_pushed():
     tl = Timeline()
     assert tl.apply("incident", incident("SPEED_DROP", t=MIN))
     assert not tl.apply("incident", incident("SPEED_DROP", t=MIN))
-    assert len(tl.log) == 1
+    assert len(tl.entries) == 1
     assert tl.state_at(2 * MIN).incident_counts["SPEED_DROP"] == 1
+
+
+def reference_state_at(arrived, at):
+    """The plain definition: replay everything up to `at`, in event-time order."""
+    state = DashboardState()
+    for kind, msg in sorted(arrived, key=lambda e: event_time_of(*e)):
+        if event_time_of(kind, msg) <= at:
+            getattr(state, APPLY[kind])(msg)
+    state.event_clock = at
+    return state.snapshot()
+
+
+def test_checkpoints_give_the_same_state_as_a_full_replay():
+    rng = random.Random(7)
+    messages = []
+    for step in range(1, 3 * 288):  # three days of 5-minute steps
+        t = step * 5 * MIN
+        for link in ("1", "2", "3"):
+            messages.append(("link_stats", link_stats(link, window_end=t, speed=rng.uniform(5, 50))))
+            messages.append(("reading", {"link_id": link, "speed_mph": 30, "event_time": t - rng.randint(0, 60_000)}))
+        messages.append(("borough_stats", borough(t - 5 * MIN, speed=rng.uniform(10, 40))))
+        if step % 17 == 0:
+            messages.append(("incident", incident(rng.choice(["SPEED_DROP", "RECOVERY", "SENSOR_SILENT"]),
+                                                  link_id=rng.choice("123"), t=t)))
+    # some messages arrive late, behind newer ones
+    for i in range(0, len(messages) - 5, 37):
+        messages[i], messages[i + 4] = messages[i + 4], messages[i]
+
+    tl = Timeline(checkpoint_every=50)
+    arrived = []
+    for n, (kind, msg) in enumerate(messages):
+        tl.apply(kind, msg)
+        arrived.append((kind, msg))
+        if n % 997 == 0:  # query while the stream runs, so late inserts invalidate checkpoints
+            at = rng.randint(0, event_time_of(kind, msg))
+            assert tl.state_at(at).snapshot() == reference_state_at(arrived, at)
+    assert tl.checkpoints  # the queries above saved some
+    for at in [rng.randint(0, 3 * 288 * 5 * MIN) for _ in range(25)]:
+        at = min(at, tl.live.event_clock)
+        assert tl.state_at(at).snapshot() == reference_state_at(arrived, at)
+
+
+def test_copy_is_independent():
+    s = DashboardState()
+    s.apply_link_stats(link_stats(window_end=MIN))
+    c = s.copy()
+    c.apply_link_stats(link_stats(window_end=2 * MIN, speed=5))
+    c.apply_incident(incident("SPEED_DROP"))
+    assert s.links["1"]["window_end"] == MIN and len(s.link_history["1"]) == 1
+    assert not s.active_incidents and not s.seen_alerts

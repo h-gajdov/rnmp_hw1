@@ -3,7 +3,8 @@
     browser  <--Socket.IO--  this bridge  <--aiokafka--  Flink output topics
 
 The endpoints that read the state are `async`, so they run on the event loop and
-never see the state half-way through an update by the Kafka feed.
+never see the state half-way through an update by the Kafka feed. They return a
+JSONResponse directly: FastAPI's generic encoder is slow for snapshots this size.
 """
 
 import asyncio
@@ -14,6 +15,7 @@ from contextlib import asynccontextmanager
 import socketio
 import uvicorn
 from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import parse_args
@@ -73,19 +75,18 @@ def create_app(config):
 
     @api.get("/api/snapshot")
     async def snapshot():
-        return state.snapshot()
+        return JSONResponse(state.snapshot())
 
     @api.get("/api/timeline")
     async def timeline_summary():
         """The event-time range the dashboard can travel over, with the network speed series."""
-        return timeline.summary()
+        return JSONResponse(timeline.summary())
 
     @api.get("/api/state")
     async def state_at(at: int = Query(..., description="event time in epoch ms")):
-        """The snapshot as it was at event time `at`. The log is copied here, on the
-        event loop; the replay runs in a thread so live pushes are not held up."""
-        frozen = timeline.frozen()
-        return await asyncio.to_thread(lambda: frozen.state_at(at).snapshot())
+        """The snapshot as it was at event time `at` (rebuilt from the nearest checkpoint,
+        a few milliseconds, so it runs right here on the event loop)."""
+        return JSONResponse(timeline.state_at(at).snapshot())
 
     @api.get("/api/health")
     async def health():
