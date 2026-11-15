@@ -141,6 +141,20 @@ b { font-weight: 650; }
 .timebar__btn svg { width: 14px; height: 14px; fill: currentColor; }
 .timebar__btn:hover:not(:disabled) { background: var(--raised-2); border-color: var(--ink-3); }
 .timebar__play { width: 30px; }
+.timebar__day {
+  flex: none; display: flex; align-items: center; height: 30px;
+  border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--raised);
+}
+.timebar__step { display: grid; place-items: center; width: 26px; height: 100%; color: var(--ink-2); border-radius: 999px; }
+.timebar__step svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.timebar__step:hover:not(:disabled) { color: var(--ink); background: var(--raised-2); }
+.timebar__step:disabled { opacity: 0.35; cursor: default; }
+.timebar__select {
+  appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: var(--t-meta); font-weight: 650; padding: 1px 2px 0; text-align: center; cursor: pointer;
+}
+.timebar__select:disabled { cursor: default; opacity: 1; }
+.timebar__select option { background: var(--surface); color: var(--ink); }
 .timebar__now { padding: 1px 12px 0 10px; }
 .timebar__now:disabled { opacity: 0.45; cursor: default; }
 .timebar.is-past .timebar__now { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
@@ -154,6 +168,7 @@ b { font-weight: 650; }
 }
 .timebar__preset:hover { color: var(--ink); background: var(--raised-2); }
 .timebar__preset.is-on { color: var(--page); background: var(--accent); }
+.timebar__preset:disabled { opacity: 0.35; cursor: default; background: none; }
 .timebar__hours span {
   position: absolute; top: 3px; transform: translateX(-50%);
   font-size: var(--t-micro); line-height: 1; color: var(--ink-3); font-variant-numeric: tabular-nums;
@@ -165,7 +180,12 @@ b { font-weight: 650; }
 .timebar__grid { stroke: var(--rule); stroke-width: 1; }
 .timebar__area { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
 .timebar__line { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.85; }
-.timebar__after { position: absolute; top: 0; bottom: 0; right: 0; background: rgb(11 17 24 / 0.62); border-radius: 0 var(--r-sm) var(--r-sm) 0; pointer-events: none; }
+/* stretches of the shown day with no data yet: before the first message, after the live end */
+.timebar__void {
+  position: absolute; top: 0; bottom: 0; pointer-events: none;
+  background: repeating-linear-gradient(135deg, transparent 0 4px, rgb(255 255 255 / 0.035) 4px 8px);
+}
+.timebar__after { position: absolute; top: 0; bottom: 0; background: rgb(11 17 24 / 0.62); border-radius: 0 var(--r-sm) var(--r-sm) 0; pointer-events: none; }
 .timebar__thumb { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
 .timebar__thumb::before {
   content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 18px; border-radius: 3px;
@@ -470,7 +490,9 @@ b { font-weight: 650; }
   .topbar__end { justify-content: space-between; }
   .live { padding-left: 0; border-left: 0; }
   .clock__time { font-size: 1.4rem; }
-  .timebar { max-width: none; gap: 8px; }
+  .timebar { max-width: none; gap: 8px; flex-wrap: wrap; }
+  .timebar__track { order: 3; flex-basis: 100%; }
+  .timebar__now { margin-left: auto; }
   .boroughs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .borough:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .legend { left: 8px; right: auto; bottom: 8px; width: auto; max-width: calc(100% - 64px); padding: 8px 10px; }

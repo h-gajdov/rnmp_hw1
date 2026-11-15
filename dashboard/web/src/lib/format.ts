@@ -7,6 +7,9 @@ const day = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', d
 export const formatClock = (ms: number) => clock.format(ms)
 export const formatDay = (ms: number) => day.format(ms)
 
+const shortDay = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' })
+export const formatShortDay = (ms: number) => shortDay.format(ms)
+
 export const formatMph = (mph: number) => `${mph.toFixed(1)} mph`
 
 export const formatPercent = (share: number) => `${Math.round(share * 100)}%`

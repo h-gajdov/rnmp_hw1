@@ -14,6 +14,7 @@ import { useLiveFeed } from './hooks/useLiveFeed'
 import { usePastState } from './hooks/usePastState'
 import { useTimeline } from './hooks/useTimeline'
 import { useBoroughShapes } from './lib/boroughs'
+import { nyDayStart } from './lib/nyTime'
 import type { LayerGroup } from './lib/mapLayers'
 
 const PLAY_DELAY_MS = 120 // pause between 5-minute steps once a step has loaded
@@ -37,9 +38,10 @@ export default function App() {
   const end = Math.max(timeline?.end ?? 0, live.eventClock)
 
   const togglePlay = useCallback(() => {
-    if (!playing && at === null) setAt(Math.ceil(start / STEP) * STEP) // from live: replay the day
+    // From live: replay today from midnight (or from the first data, if that is later).
+    if (!playing && at === null) setAt(Math.max(Math.ceil(start / STEP) * STEP, nyDayStart(end)))
     setPlaying((p) => !p)
-  }, [playing, at, start])
+  }, [playing, at, start, end])
 
   // Playback: step 5 minutes once the current step is on screen; at the end, go live.
   useEffect(() => {
