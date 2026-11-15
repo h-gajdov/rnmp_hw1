@@ -1,39 +1,40 @@
 /* NYC Traffic Watch.
-   A traffic desk's bulletin over a printed street map: a black sign band on
-   top, flat near-white city land, white panels on hairlines and ink type set
-   in Overpass (a descendant of Highway Gothic, the lettering on the roads
-   these sensors watch). Color means traffic and nothing else: the four
-   congestion levels, the incident types and severities. */
+   A traffic desk's bulletin over a dark street map: a near-black sign band
+   on top, the five boroughs as flat graphite land, charcoal panels separated
+   by hairlines (no shadows, no glass) and type set in Overpass (a descendant
+   of Highway Gothic, the lettering on the roads these sensors watch). Color
+   means traffic and nothing else: the four congestion levels, the incident
+   types and severities. */
 
 :root {
-  /* surfaces */
-  --ground: #E6E7E3;     /* hairlines between panels, the region around the city */
-  --panel: #FFFFFF;
-  --panel-2: #F5F6F3;    /* hover, empty plots */
-  --select: #EDF2FC;     /* selected or focused row */
-  --rule: #E3E5E1;
-  --rule-strong: #C8CCC8;
+  /* surfaces: neutral charcoal with a slight cool cast */
+  --ground: #2B3036;     /* hairlines between panels */
+  --panel: #16191D;
+  --panel-2: #1D2126;    /* hover, empty plots, overlays on the map */
+  --select: #1F2731;     /* selected or focused row */
+  --rule: #262B31;
+  --rule-strong: #353B42;
 
   /* ink */
-  --ink: #16191C;
-  --ink-2: #464C52;
-  --ink-3: #686E74;
+  --ink: #E6E8EA;
+  --ink-2: #A9AFB6;
+  --ink-3: #8A9198;
 
   /* the sign band */
-  --band: #141618;
-  --band-ink: #FFFFFF;
-  --band-ink-2: #B6BCC1;
-  --band-rule: #2E3236;
+  --band: #0B0C0E;
+  --band-ink: #F4F5F6;
+  --band-ink-2: #9EA4AB;
+  --band-rule: #23272C;
 
   /* interface: keyboard focus only */
-  --focus: #1F5BD6;
+  --focus: #8FB4EE;
 
   /* traffic (also in lib/levels.ts) */
-  --free: #2E9B5A;
-  --moderate: #D99A00;
-  --heavy: #E4572E;
-  --severe: #9E1B1B;
-  --silent: #8D949A;
+  --free: #2DB665;
+  --moderate: #E8C547;
+  --heavy: #F0782C;
+  --severe: #D7263D;
+  --silent: #7C858E;
 
   --font: 'Overpass Variable', 'Overpass', 'Helvetica Neue', Arial, sans-serif;
   --side-w: 404px;
@@ -54,7 +55,7 @@
   --s-4: 16px;
   --s-5: 24px;
 
-  color-scheme: light;
+  color-scheme: dark;
   font-family: var(--font);
   font-size: 16px;
   line-height: 1.4;
@@ -69,7 +70,7 @@ h1, h2, h3, p, ul, ol, dl, dd { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 1px; }
-::selection { background: #CFDDF8; color: var(--ink); }
+::selection { background: #3A4B62; color: var(--ink); }
 b { font-weight: 650; }
 .num { font-variant-numeric: tabular-nums; }
 
@@ -115,7 +116,7 @@ b { font-weight: 650; }
   min-width: 0; max-width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s-3); align-items: baseline;
   padding: 3px var(--s-2) 2px; margin-left: calc(-1 * var(--s-2)); border-radius: var(--r);
 }
-.lead__button:hover { background: #24282C; }
+.lead__button:hover { background: #1A1D21; }
 .lead__label { grid-row: 1 / 3; align-self: center; display: inline-flex; align-items: center; gap: 7px; font-size: var(--t-meta); font-weight: 600; color: var(--band-ink-2); white-space: nowrap; }
 .lead__sev { width: 10px; height: 10px; border-radius: 1px; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25); }
 .lead__road { font-size: var(--t-heading); font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -142,16 +143,19 @@ b { font-weight: 650; }
 .live__dot { width: 8px; height: 8px; border-radius: 1px; background: var(--silent); }
 .live__stats { display: flex; flex-direction: column; color: var(--band-ink-2); font-variant-numeric: tabular-nums; min-width: 92px; white-space: nowrap; }
 .live__stats b { color: var(--band-ink); }
-.live--live .live__dot { background: #3FBF74; }
+.live--live .live__dot { background: var(--free); }
 .live--idle .live__dot { background: var(--moderate); }
-.live--down .live__dot { background: #F0574B; }
+.live--down .live__dot { background: var(--severe); }
 
 /* ---------- map stage ---------- */
 .stage { grid-area: stage; position: relative; min-height: 0; background: var(--ground); }
 .map, .map__canvas { position: absolute; inset: 0; }
 .map--loading { display: grid; place-items: center; color: var(--ink-2); padding: var(--s-5); text-align: center; }
-.maplibregl-ctrl-group { border-radius: var(--r) !important; box-shadow: 0 1px 3px rgb(20 22 24 / 0.18) !important; }
-.maplibregl-ctrl-attrib { font-size: 11px; color: var(--ink-2); }
+.maplibregl-ctrl-group { background: var(--panel-2) !important; border: 1px solid var(--rule-strong); border-radius: var(--r) !important; box-shadow: none !important; }
+.maplibregl-ctrl-group button + button { border-top-color: var(--rule-strong) !important; }
+.maplibregl-ctrl-icon, .maplibregl-ctrl-attrib-button { filter: invert(0.86); }
+.maplibregl-ctrl-attrib { font-size: 11px; color: var(--ink-3); background: rgb(22 25 29 / 0.85) !important; }
+.maplibregl-ctrl-attrib a { color: var(--ink-2) !important; }
 
 /* overlays on the map are the only raised surfaces */
 .panel, .legend {
@@ -160,7 +164,6 @@ b { font-weight: 650; }
   background: var(--panel);
   border: 1px solid var(--rule-strong);
   border-radius: var(--r);
-  box-shadow: 0 2px 8px rgb(20 22 24 / 0.12);
 }
 
 /* borough names set on the map, like a street atlas */
@@ -173,14 +176,14 @@ b { font-weight: 650; }
   line-height: 1.15;
   white-space: nowrap;
   color: var(--ink);
-  background: rgb(251 251 249 / 0.82);
+  background: rgb(17 19 22 / 0.78);
   transition: opacity 0.2s, background-color 0.2s, color 0.2s;
 }
 .borough-label__name { font-size: var(--t-body); font-weight: 750; }
 .borough-label__speed { font-size: var(--t-meta); font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.borough-label:hover, .borough-label.is-hover { background: #fff; box-shadow: 0 0 0 1px var(--ink-3); }
-.borough-label.is-focus { background: var(--ink); color: #fff; }
-.borough-label.is-focus .borough-label__speed { color: #D5D9DC; }
+.borough-label:hover, .borough-label.is-hover { background: var(--panel-2); box-shadow: 0 0 0 1px var(--ink-3); }
+.borough-label.is-focus { background: var(--ink); color: var(--panel); }
+.borough-label.is-focus .borough-label__speed { color: #3A4047; }
 .borough-label.is-dim { opacity: 0.45; }
 
 /* link hover card */
@@ -191,10 +194,9 @@ b { font-weight: 650; }
   pointer-events: none;
   max-width: 300px;
   padding: var(--s-2) var(--s-3) 10px;
-  background: var(--panel);
+  background: var(--panel-2);
   border: 1px solid var(--rule-strong);
   border-radius: var(--r);
-  box-shadow: 0 3px 10px rgb(20 22 24 / 0.16);
 }
 .tooltip--flip { transform: translate(calc(-100% - 14px), 14px); }
 .tooltip__where { color: var(--ink-3); font-size: var(--t-meta); }
@@ -232,9 +234,10 @@ b { font-weight: 650; }
 }
 .switch__track::after {
   content: ''; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 2px rgb(20 22 24 / 0.3); transition: transform 0.15s;
+  background: var(--ink-3); transition: transform 0.15s, background-color 0.15s;
 }
 .switch input:checked + .switch__track { background: var(--ink); }
+.switch input:checked + .switch__track::after { background: var(--panel); }
 .switch input:checked + .switch__track::after { transform: translateX(11px); }
 .switch input:checked ~ span:last-child { color: var(--ink); }
 .switch input:focus-visible + .switch__track { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -389,10 +392,10 @@ button.rundown__row:hover { background: var(--panel-2); }
   white-space: nowrap;
   font-size: var(--t-meta);
   padding: 5px var(--s-2);
-  color: #fff;
-  background: var(--ink);
+  color: var(--ink);
+  background: #2A2F35;
+  border: 1px solid #3E454D;
   border-radius: var(--r);
-  box-shadow: 0 3px 10px rgb(20 22 24 / 0.2);
   pointer-events: none;
   z-index: 4;
   font-variant-numeric: tabular-nums;
@@ -400,7 +403,7 @@ button.rundown__row:hover { background: var(--panel-2); }
 .chart__tip--left { transform: translateX(-100%); }
 .chart__tip--right { transform: none; }
 .chart__tip--table { display: grid; gap: 2px; min-width: 150px; }
-.chart__tip-head { color: #C9CED2; margin-bottom: 2px; }
+.chart__tip-head { color: var(--ink-2); margin-bottom: 2px; }
 .chart__tip-row { display: flex; align-items: center; gap: 6px; }
 .chart__tip-row b { margin-left: auto; }
 

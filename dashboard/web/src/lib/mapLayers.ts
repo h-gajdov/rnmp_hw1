@@ -5,21 +5,21 @@
 import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl'
 import { INCIDENT_COLORS, LEVELS, NO_DATA_COLOR, SILENT_COLOR } from './levels'
 
-export const BASEMAP = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+export const BASEMAP = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
 
-// The basemap is retinted like a printed street map: the region outside the
-// city recedes to grey, water is a muted blue-grey and the five boroughs are
-// drawn on top as flat near-white land, so the monitored city reads first.
-const REGION = '#E6E7E3'
-const WATER = '#CBD6DC'
-const LAND = '#FBFBF9'
-const INK = '#16191C'
-const CASING = '#FFFFFF'
+// The dark basemap is retinted to neutral charcoal: the region outside the
+// city recedes, water is near-black and the five boroughs are drawn on top as
+// flat graphite land a step lighter, so the monitored city reads first.
+const REGION = '#121417'
+const WATER = '#08090B'
+const LAND = '#1E2227'
+const INK = '#E6E8EA'
+const CASING = '#08090B'
 
 export function restyleBasemap(m: MapLibreMap) {
   for (const layer of m.getStyle().layers) {
     if (layer.type === 'symbol') {
-      m.setPaintProperty(layer.id, 'text-opacity', 0.75)
+      m.setPaintProperty(layer.id, 'text-opacity', 0.5)
       m.setPaintProperty(layer.id, 'text-halo-color', REGION)
     }
   }
@@ -45,14 +45,14 @@ const hovered: ExpressionSpecification = ['boolean', ['feature-state', 'hover'],
 const selected: ExpressionSpecification = ['boolean', ['feature-state', 'selected'], false]
 
 // Flat land divided by water. Brooklyn and Queens share a land border, so a
-// faint hairline separates them; hover and focus draw it in ink.
+// faint hairline separates them; hover and focus draw it in light ink.
 export const boroughLayers: LayerSpecification[] = [
   {
     id: 'borough-fill',
     type: 'fill',
     source: 'boroughs',
     paint: {
-      'fill-color': ['case', selected, '#FFFFFF', hovered, '#FFFFFF', dimmed, '#EFF0EC', LAND],
+      'fill-color': ['case', selected, '#252A30', hovered, '#252A30', dimmed, '#17191C', LAND],
       'fill-color-transition': { duration: 200 },
     },
   },
@@ -62,9 +62,9 @@ export const boroughLayers: LayerSpecification[] = [
     source: 'boroughs',
     layout: { 'line-join': 'round' },
     paint: {
-      'line-color': ['case', selected, INK, hovered, INK, '#B9BFBC'],
+      'line-color': ['case', selected, INK, hovered, INK, '#353B42'],
       'line-width': ['case', selected, 1.6, hovered, 1.2, 0.6],
-      'line-opacity': ['case', selected, 0.9, hovered, 0.7, 1],
+      'line-opacity': ['case', selected, 0.85, hovered, 0.6, 1],
     },
   },
 ]
@@ -98,7 +98,7 @@ export const linkLayers: LayerSpecification[] = [
     paint: {
       'line-color': CASING,
       'line-width': ['interpolate', ['linear'], ['zoom'], 9, 5, 14, 13],
-      'line-opacity': ['case', dimmed, 0.3, 1],
+      'line-opacity': ['case', dimmed, 0.3, 0.9],
     },
   },
   {
@@ -136,8 +136,8 @@ export const flowLayers: LayerSpecification[] = [
     source: 'flow',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 1.1, 12, 1.8, 15, 3],
-      'circle-color': INK,
-      'circle-opacity': ['case', ['get', 'dim'], 0.12, 0.7],
+      'circle-color': '#F1F3F5',
+      'circle-opacity': ['case', ['get', 'dim'], 0.12, 0.85],
       'circle-pitch-alignment': 'map',
     },
   },
@@ -148,7 +148,7 @@ const incidentColor: ExpressionSpecification = ['match', ['get', 'type'],
   'SENSOR_SILENT', INCIDENT_COLORS.SENSOR_SILENT,
   INCIDENT_COLORS.SPEED_DROP]
 
-// A solid pin in the incident's color on a white rim; critical ones get a thin outer ring.
+// A solid pin in the incident's color on a dark rim; critical ones get a thin outer ring.
 export const incidentLayers: LayerSpecification[] = [
   {
     id: 'incident-ring',
