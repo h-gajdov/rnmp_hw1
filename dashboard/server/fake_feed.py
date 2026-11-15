@@ -79,11 +79,12 @@ class Simulator:
 
     def rush_hour(self, t):
         hour = datetime.fromtimestamp(t / 1000, NY).hour
-        return 0.72 if hour in (7, 8, 9, 16, 17, 18) else 1.0
+        return 0.8 if hour in (7, 8, 9, 16, 17, 18) else 1.0
 
     def reading(self, link, t):
         rng = self.rng
-        link.drift = min(1.0, max(0.55, link.drift + rng.uniform(-0.04, 0.04)))
+        # mean-reverting walk around 90% of free flow
+        link.drift = min(1.0, max(0.6, link.drift + rng.uniform(-0.04, 0.04) + (0.9 - link.drift) * 0.1))
         factor = link.drift * self.rush_hour(t)
         if link.blockage and t < link.blockage[0]:
             factor = link.blockage[1]
@@ -196,12 +197,15 @@ async def main():
     p.add_argument("--start", default="2026-10-01T06:30:00", help="simulated start, New York time")
     p.add_argument("--incident-rate", type=float, default=0.006, help="chance per reading of a blockage")
     p.add_argument("--silence-rate", type=float, default=0.001, help="chance per step of a sensor going silent")
+    p.add_argument("--dead-share", type=float, default=0.35,
+                   help="share of links that never report (the real data has ~44 of 125 faulty links)")
     p.add_argument("--seed", type=int, default=7)
     args = p.parse_args()
 
     rng = random.Random(args.seed)
     features = json.loads(args.links_geojson.read_text())["features"]
-    sim = Simulator([Link(f["properties"], rng) for f in features], args, rng)
+    links = [Link(f["properties"], rng) for f in features]
+    sim = Simulator([link for link in links if rng.random() >= args.dead_share], args, rng)
     topics = {k: args.prefix + n for k, n in {
         "readings": "traffic-readings", "link_stats": "traffic-link-stats",
         "borough_stats": "traffic-borough-stats", "incidents": "traffic-incidents"}.items()}
@@ -211,7 +215,7 @@ async def main():
                                 value_serializer=lambda m: json.dumps(m).encode(),
                                 key_serializer=str.encode)
     await producer.start()
-    print(f"publishing {len(sim.links)} links to {', '.join(topics.values())} at {args.speedup:g}x")
+    print(f"publishing {len(sim.links)} of {len(links)} links to {', '.join(topics.values())} at {args.speedup:g}x")
 
     t0 = int(datetime.fromisoformat(args.start).replace(tzinfo=NY).timestamp() * 1000)
     step_end = t0 + STEP
