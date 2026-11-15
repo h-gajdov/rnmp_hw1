@@ -1,4 +1,3 @@
-import { boroughColor } from '../lib/boroughs'
 import { formatMph, formatPercent, prettyLinkName } from '../lib/format'
 import { INCIDENT_LABELS, levelInfo } from '../lib/levels'
 import type { Incident, LinkFeature, LinkStats } from '../types'
@@ -17,10 +16,7 @@ export function LinkTooltip({ x, y, feature, stats, incident, flip }: Props) {
   const level = stats && levelInfo(stats.level)
   return (
     <div className={`tooltip${flip ? ' tooltip--flip' : ''}`} style={{ left: x, top: y }} role="tooltip">
-      <div className="tooltip__where">
-        <span className="swatch swatch--round" style={{ background: boroughColor(feature.properties.borough) }} />
-        {feature.properties.borough}
-      </div>
+      <div className="tooltip__where">{feature.properties.borough}</div>
       <div className="tooltip__name">{prettyLinkName(feature.properties.link_name)}</div>
       {stats && level ? (
         <div className="tooltip__row">

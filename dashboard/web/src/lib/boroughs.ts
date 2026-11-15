@@ -1,19 +1,9 @@
-// The five boroughs: one identity color each, used for the map areas, the
-// map labels and the borough strip. The hues stay clear of the four
-// congestion colors (green/yellow/orange/red) so a borough tint is never
-// read as a traffic level. Identity is never color alone: every borough
-// area and card is labelled with its name. Neighbours on the map (Manhattan
-// against Bronx, Queens and Brooklyn; Brooklyn against Queens) get the most
-// separated pairs; checked with the dataviz palette validator (dark mode).
+// The five boroughs. On the map they are flat land divided by water and named
+// in place; in the strip each one is its own labelled small multiple. They
+// carry no color of their own: color in this dashboard always means traffic.
 import { useEffect, useState } from 'react'
 
-export const BOROUGHS = [
-  { name: 'Manhattan', color: '#D06A98' },
-  { name: 'Brooklyn', color: '#21A3B8' },
-  { name: 'Queens', color: '#4D69D6' },
-  { name: 'Bronx', color: '#BC8A45' },
-  { name: 'Staten Island', color: '#A07AE0' },
-] as const
+export const BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'] as const
 
 /** Where a borough's map label goes when the polygon's own label point is
  *  a bad spot: Manhattan is too narrow, a label inside it would cover the
@@ -22,9 +12,7 @@ export const LABEL_OVERRIDES: Record<string, { at: [number, number]; anchor: 'ri
   Manhattan: { at: [-74.008, 40.785], anchor: 'right' },
 }
 
-export type BoroughName = (typeof BOROUGHS)[number]['name']
-
-export const boroughColor = (name: string) => BOROUGHS.find((b) => b.name === name)?.color ?? '#8a97a6'
+export type BoroughName = (typeof BOROUGHS)[number]
 
 export interface BoroughFeature {
   type: 'Feature'

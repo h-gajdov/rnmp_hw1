@@ -15,10 +15,6 @@ export function Header({ eventClock, linkCount, reporting, health }: Props) {
   return (
     <header className="topbar">
       <div className="brand">
-        <svg className="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
-          <rect x="1" y="1" width="30" height="30" rx="7" />
-          <path d="M7 22 L13 14 L18 19 L25 10" />
-        </svg>
         <div>
           <h1 className="brand__name">NYC Traffic Watch</h1>
           <p className="brand__scope">

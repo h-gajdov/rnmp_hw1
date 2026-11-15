@@ -67,7 +67,7 @@ export function FlowPanel({ boroughs, history, links, silent }: Props) {
         points={shown.map((w) => ({ t: w.t, v: w.speed }))}
         yMax={yMax}
         height={52}
-        color="var(--accent)"
+        color="var(--ink)"
         ticks={ticks}
         axis
         tooltip={(p) => {

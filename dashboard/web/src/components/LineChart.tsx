@@ -62,7 +62,7 @@ export function LineChart({ points, yMax, height, color = 'var(--ink-2)', refere
           {reference !== undefined && (
             <line className="chart__ref" x1={0} x2={W} y1={y(reference)} y2={y(reference)} vectorEffect="non-scaling-stroke" />
           )}
-          <path d={area} fill={color} opacity={0.1} />
+          <path d={area} fill={color} opacity={0.06} />
           <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           {hp && (
             <line className="chart__cross" x1={x(hp.t)} x2={x(hp.t)} y1={0} y2={height} vectorEffect="non-scaling-stroke" />

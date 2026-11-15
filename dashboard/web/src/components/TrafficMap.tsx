@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useFlowAnimation } from '../hooks/useFlowAnimation'
 import { useRatioTween } from '../hooks/useRatioTween'
-import { boroughColor, LABEL_OVERRIDES, type BoroughGeoJson } from '../lib/boroughs'
+import { LABEL_OVERRIDES, type BoroughGeoJson } from '../lib/boroughs'
 import { buildFlowPaths } from '../lib/flow'
 import {
   BASEMAP, BELOW_ROADS, boroughLayers, flowLayers, incidentLayers, LAYER_GROUPS, linkLayers, restyleBasemap,
@@ -269,7 +269,6 @@ export function TrafficMap(props: Props) {
             focusBorough !== null && name !== focusBorough && 'is-dim',
             name === hoverBorough && 'is-hover',
           ].filter(Boolean).join(' ')}
-          style={{ '--borough': boroughColor(name) } as React.CSSProperties}
           onClick={() => props.onFocusBorough(name === focusBorough ? null : name)}
           onMouseEnter={() => props.onHoverBorough(name)}
           onMouseLeave={() => props.onHoverBorough(null)}

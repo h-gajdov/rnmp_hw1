@@ -25,7 +25,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
 
   return (
     <section className="boroughs" aria-label="Average speed per borough">
-      {BOROUGHS.map(({ name, color }) => {
+      {BOROUGHS.map((name) => {
         const series = boroughs[name] ?? []
         const last = series[series.length - 1]
         const incidents = open[name] ?? 0
@@ -39,7 +39,6 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
               focus !== null && focus !== name && 'is-dim',
               hover === name && 'is-hover',
             ].filter(Boolean).join(' ')}
-            style={{ '--borough': color } as React.CSSProperties}
             onMouseEnter={() => onHover(name)}
             onMouseLeave={() => onHover(null)}
             onClick={toggle}
@@ -51,7 +50,6 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
                 aria-pressed={focus === name}
                 onClick={(e) => { e.stopPropagation(); toggle() }}
               >
-                <span className="borough__key" aria-hidden="true" />
                 {name}
               </button>
               {last && (
@@ -65,7 +63,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
               points={series.map((w) => ({ t: w.window_end, v: w.avg_speed_mph }))}
               yMax={yMax}
               height={44}
-              color={color}
+              color="var(--ink)"
               tooltip={(p) => {
                 const w = series.find((s) => s.window_end === p.t)!
                 return (
