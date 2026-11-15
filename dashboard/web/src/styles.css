@@ -90,14 +90,14 @@ b { font-weight: 650; }
   padding: 10px 20px;
   background: var(--surface);
 }
-.brand { flex: none; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .brand__mark { width: 32px; height: 32px; flex: none; }
 .brand__mark rect { fill: var(--raised-2); stroke: var(--rule-strong); }
 .brand__mark path { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .brand__name { font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; line-height: 1.15; }
 .brand__scope { font-size: var(--t-meta); color: var(--ink-2); }
 
-.topbar__end { flex: none; display: flex; align-items: center; gap: 20px; }
+.topbar__end { display: flex; align-items: center; gap: 20px; }
 .clock { display: flex; align-items: center; gap: 12px; }
 .clock__time { font-size: 1.75rem; font-weight: 700; line-height: 1; padding-top: 3px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .clock__meta { display: flex; flex-direction: column; font-size: var(--t-meta); line-height: 1.3; color: var(--ink-2); }
@@ -127,81 +127,6 @@ b { font-weight: 650; }
   0% { box-shadow: 0 0 0 0 rgb(45 182 101 / 0.55); }
   70%, 100% { box-shadow: 0 0 0 6px rgb(45 182 101 / 0); }
 }
-
-.clock--past .clock__time { color: var(--accent); }
-
-/* ---------- time bar: travel back over the replayed day ---------- */
-.timebar { flex: 1; min-width: 0; max-width: 1040px; display: flex; align-items: center; gap: 12px; }
-.timebar--empty { justify-content: center; color: var(--ink-3); font-size: var(--t-meta); }
-.timebar__btn {
-  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 30px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--raised);
-  font-size: var(--t-meta); font-weight: 650;
-}
-.timebar__btn svg { width: 14px; height: 14px; fill: currentColor; }
-.timebar__btn:hover:not(:disabled) { background: var(--raised-2); border-color: var(--ink-3); }
-.timebar__play { width: 30px; }
-.timebar__day {
-  flex: none; display: flex; align-items: center; height: 30px;
-  border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--raised);
-}
-.timebar__step { display: grid; place-items: center; width: 26px; height: 100%; color: var(--ink-2); border-radius: 999px; }
-.timebar__step svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.timebar__step:hover:not(:disabled) { color: var(--ink); background: var(--raised-2); }
-.timebar__step:disabled { opacity: 0.35; cursor: default; }
-.timebar__select {
-  appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: var(--ink);
-  font: inherit; font-size: var(--t-meta); font-weight: 650; padding: 1px 2px 0; text-align: center; cursor: pointer;
-}
-.timebar__select:disabled { cursor: default; opacity: 1; }
-.timebar__select option { background: var(--surface); color: var(--ink); }
-.timebar__now { padding: 1px 12px 0 10px; }
-.timebar__now:disabled { opacity: 0.45; cursor: default; }
-.timebar.is-past .timebar__now { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
-
-.timebar__track { flex: 1; min-width: 0; display: grid; grid-template-rows: 17px 30px 15px; }
-.timebar__presets, .timebar__hours { position: relative; }
-.timebar__preset {
-  position: absolute; top: 0; transform: translateX(-50%);
-  padding: 1px 6px 0; border-radius: 3px; line-height: 14px; white-space: nowrap;
-  font-size: var(--t-micro); font-weight: 600; color: var(--ink-2);
-}
-.timebar__preset:hover { color: var(--ink); background: var(--raised-2); }
-.timebar__preset.is-on { color: var(--page); background: var(--accent); }
-.timebar__preset:disabled { opacity: 0.35; cursor: default; background: none; }
-.timebar__hours span {
-  position: absolute; top: 3px; transform: translateX(-50%);
-  font-size: var(--t-micro); line-height: 1; color: var(--ink-3); font-variant-numeric: tabular-nums;
-}
-
-.timebar__hours span.is-first { transform: none; }
-.timebar__plot { position: relative; border-radius: var(--r-sm); border: 1px solid var(--rule); background: var(--page); }
-.timebar__plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.timebar__grid { stroke: var(--rule); stroke-width: 1; }
-.timebar__area { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
-.timebar__line { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.85; }
-/* stretches of the shown day with no data yet: before the first message, after the live end */
-.timebar__void {
-  position: absolute; top: 0; bottom: 0; pointer-events: none;
-  background: repeating-linear-gradient(135deg, transparent 0 4px, rgb(255 255 255 / 0.035) 4px 8px);
-}
-.timebar__after { position: absolute; top: 0; bottom: 0; background: rgb(11 17 24 / 0.62); border-radius: 0 var(--r-sm) var(--r-sm) 0; pointer-events: none; }
-.timebar__thumb { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
-.timebar__thumb::before {
-  content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 18px; border-radius: 3px;
-  transform: translate(-50%, -50%); background: inherit; box-shadow: 0 0 0 2px var(--page);
-}
-.timebar.is-past .timebar__thumb { background: var(--accent); }
-.timebar__thumb.is-loading::before { animation: thumb-wait 0.7s ease-in-out infinite alternate; }
-@keyframes thumb-wait { to { opacity: 0.45; } }
-.timebar__plot:has(.timebar__input:focus-visible) .timebar__thumb::before { outline: 2px solid var(--accent); outline-offset: 3px; }
-.timebar__input {
-  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
-  opacity: 0; cursor: ew-resize; -webkit-appearance: none; appearance: none; background: transparent;
-}
-/* a hairline native thumb, so the value under the pointer matches the drawn thumb */
-.timebar__input::-webkit-slider-thumb { -webkit-appearance: none; width: 1px; height: 30px; }
-.timebar__input::-moz-range-thumb { width: 1px; height: 30px; border: 0; }
 
 /* ---------- map stage ---------- */
 .stage { grid-area: stage; position: relative; min-height: 0; background: #121a24; }
@@ -467,9 +392,6 @@ b { font-weight: 650; }
 /* ---------- smaller screens ---------- */
 @media (max-width: 1280px) {
   :root { --side-w: 360px; }
-  .topbar { gap: 16px; }
-  .brand__scope { display: none; }
-  .live__stats { display: none; }
   .kpis { gap: 8px; }
   .kpi__value { font-size: 1.35rem; }
   .borough__now b { font-size: 1rem; }
@@ -490,9 +412,6 @@ b { font-weight: 650; }
   .topbar__end { justify-content: space-between; }
   .live { padding-left: 0; border-left: 0; }
   .clock__time { font-size: 1.4rem; }
-  .timebar { max-width: none; gap: 8px; flex-wrap: wrap; }
-  .timebar__track { order: 3; flex-basis: 100%; }
-  .timebar__now { margin-left: auto; }
   .boroughs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .borough:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .legend { left: 8px; right: auto; bottom: 8px; width: auto; max-width: calc(100% - 64px); padding: 8px 10px; }

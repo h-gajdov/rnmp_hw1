@@ -133,7 +133,6 @@ services:
       SEED: ${SEED:-42}
       LIMIT: ${LIMIT:-0}
       LOOP: ${LOOP:-false}                    # true = replay forever, one day later each round
-      CONTINUE: ${CONTINUE:-true}             # topic already has these days: replay whole days later
     restart: "no"
 
   # Live dashboard (React + Python Socket.IO bridge) on http://localhost:${DASHBOARD_PORT}.
@@ -150,5 +149,4 @@ services:
     environment:
       KAFKA_BOOTSTRAP: kafka:9093
       OFFSET: earliest
-      HISTORY_HOURS: ${HISTORY_HOURS:-168}    # how far back the dashboard's time bar reaches
       LINKS_GEOJSON: /data/links.geojson

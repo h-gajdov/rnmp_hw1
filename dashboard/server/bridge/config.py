@@ -23,7 +23,6 @@ class Config:
     port: int
     links_geojson: Path
     web_dist: Path
-    history_hours: float
 
     @property
     def topics(self):
@@ -63,8 +62,6 @@ def parse_args(argv=None):
     p.add_argument("--web-dist", type=Path,
                    default=Path(_env("WEB_DIST", str(REPO_ROOT / "dashboard" / "web" / "dist"))),
                    help="built React app to serve (production mode)")
-    p.add_argument("--history-hours", type=float, default=float(_env("HISTORY_HOURS", "168")),
-                   help="how much event time the dashboard can travel back over")
     a = p.parse_args(argv)
     return Config(
         bootstrap=a.bootstrap,
@@ -79,5 +76,4 @@ def parse_args(argv=None):
         port=a.port,
         links_geojson=a.links_geojson,
         web_dist=a.web_dist,
-        history_hours=a.history_hours,
     )

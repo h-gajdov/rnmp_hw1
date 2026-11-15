@@ -24,7 +24,6 @@ class DashboardState:
         self.silent_links = {}  # link_id -> SENSOR_SILENT alert
         self.recent_incidents = deque(maxlen=recent_incidents)
         self.incident_counts = Counter()
-        self.seen_alerts = set()  # alert ids already applied (the Flink sinks are at-least-once)
         self.readings_total = 0
         self.late_total = 0
         self.event_clock = 0  # highest event time seen on any topic (ms)
@@ -70,11 +69,6 @@ class DashboardState:
         self._advance_clock(msg["window_end"])
 
     def apply_incident(self, msg):
-        """Returns False for an alert that was already applied (same alert_id): a
-        redelivery or the same day replayed again, which must not be counted twice."""
-        if msg["alert_id"] in self.seen_alerts:
-            return False
-        self.seen_alerts.add(msg["alert_id"])
         link_id = str(msg["link_id"])
         kind = msg["type"]
         self.incident_counts[kind] += 1
@@ -88,7 +82,6 @@ class DashboardState:
             self.silent_links[link_id] = msg
 
         self._advance_clock(msg["event_time"])
-        return True
 
     def apply_reading(self, msg):
         self.readings_total += 1
@@ -100,21 +93,6 @@ class DashboardState:
     def _advance_clock(self, event_time):
         if event_time and event_time > self.event_clock:
             self.event_clock = event_time
-
-    def copy(self):
-        """An independent copy (for the time-travel checkpoints). The messages are
-        shared: they are never modified, only the containers holding them."""
-        c = DashboardState.__new__(DashboardState)
-        c.__dict__.update(self.__dict__)
-        c.links = dict(self.links)
-        c.link_history = {k: deque(v, maxlen=v.maxlen) for k, v in self.link_history.items()}
-        c.boroughs = {b: dict(series) for b, series in self.boroughs.items()}
-        c.active_incidents = dict(self.active_incidents)
-        c.silent_links = dict(self.silent_links)
-        c.recent_incidents = deque(self.recent_incidents, maxlen=self.recent_incidents.maxlen)
-        c.incident_counts = Counter(self.incident_counts)
-        c.seen_alerts = set(self.seen_alerts)
-        return c
 
     # ---- snapshot -------------------------------------------------------
 

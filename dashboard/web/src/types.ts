@@ -78,20 +78,6 @@ export interface Snapshot {
   late_total: number
 }
 
-/** One 5-minute window of the whole network (boroughs combined), for the time bar. */
-export interface NetworkPoint {
-  window_end: number
-  avg_speed_mph: number
-  slow_share: number
-}
-
-/** GET /api/timeline: the event-time range the dashboard can travel over. */
-export interface TimelineSummary {
-  start: number
-  end: number
-  series: NetworkPoint[]
-}
-
 export interface LinkFeature {
   type: 'Feature'
   properties: { link_id: string; link_name: string; borough: string }
