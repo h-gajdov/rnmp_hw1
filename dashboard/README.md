@@ -40,18 +40,29 @@ Flink ──► Kafka topics ──► Python bridge ──Socket.IO (WebSocket)
   link history). Both are computed in the browser from the existing topics; the message
   contract is unchanged. The flow, incident and borough layers can be switched off in the legend.
 
-- **Time travel**: the bar in the header spans everything the bridge remembers (normally the
-  whole replayed day) with the network speed per 5 minutes drawn under it, so the rush hours
-  are visible at a glance. Drag it, use the arrow keys (5 min) / Page Up/Down (1 h), or click
-  a preset (*Night* 03:00, *AM rush* 08:00, *Lunch* 12:30, *PM rush* 17:30) and the whole page
-  (map, counters, incidents, alert log, charts, link details) shows that moment; the clock turns
-  blue and reads "Looking back". ▶ plays the day in 5-minute steps; *Now* (or dragging to the
-  right end) returns to the live stream, which keeps updating in the background meanwhile.
-  The bridge (`timeline.py`) logs every message of the last `--history-hours` of event time
-  and rebuilds the state at time *t* by replaying the messages up to *t*, in event-time order,
-  through the same `DashboardState` rules as the live view (`GET /api/state?at=<epoch ms>`,
-  ~70 ms for a day, run in a worker thread). `GET /api/timeline` returns the range and the
-  network series. The page keeps one request in flight, so scrubbing never floods the bridge.
+- **Time travel**: the bar in the header shows one New York day, 00:00 to 24:00, with the
+  network speed per 5 minutes drawn under it, so the rush hours are visible at a glance; the
+  part of today the stream has not reached yet is hatched. The day picker (‹ day ›) offers
+  every day the bridge remembers (a week by default) and keeps the time of day when switching,
+  so 08:00 on one day compares directly with 08:00 on another. Drag the bar, use the arrow keys
+  (5 min) / Page Up/Down (1 h, across midnight), or click a preset (*Night* 03:00, *AM rush*
+  08:00, *Lunch* 12:30, *PM rush* 17:30) and the whole page (map, counters, incidents, alert log,
+  charts, link details) shows that moment; the clock turns blue and reads "Looking back".
+  ▶ plays forward in 5-minute steps (from live: today from midnight); *Now* (or dragging to the
+  live end) returns to the live stream, which keeps updating in the background meanwhile.
+  The bridge (`timeline.py`) keeps every message of the last `--history-hours` of event time in
+  a list sorted by event time and rebuilds the state at time *t* by replaying the messages up to
+  *t* through the same `DashboardState` rules as the live view (`GET /api/state?at=<epoch ms>`).
+  The replay saves a copy of the state every 4,000 messages and later requests start from the
+  nearest one, so a request takes ~6 ms even with several days in memory (~35 MB per day);
+  a late message discards the checkpoints after it. `GET /api/timeline` returns the range and
+  the network series. The page keeps one request in flight, so scrubbing never floods the bridge.
+- **Several days**: each day the producer replays is a separate day in the picker: `LOOP=true`
+  shifts every round one day later, `DATA_START`/`DATA_END` download several real days, and a
+  producer restarted on topics that already hold its days continues on the next free day
+  (`CONTINUE`, on by default), so event time only moves forward and *Now* keeps moving with it.
+  Replaying the same day into the same topics again (`CONTINUE=false`) mixes two copies of that
+  day; start from empty topics (`docker compose down -v`) for that.
 
 Congestion levels follow the contract: ratio = avg speed / free-flow speed,
 `>= 0.75` free flow (green), `>= 0.5` moderate (yellow), `>= 0.3` heavy (orange), else severe (red).
@@ -109,7 +120,7 @@ Every flag can also be set with an environment variable (the flag wins).
 | `--host` / `--port` | `HOST` / `PORT` | `0.0.0.0` / `8000` |
 | `--links-geojson` | `LINKS_GEOJSON` | `data/links.geojson` (image: `/data/links.geojson`) |
 | `--web-dist` | `WEB_DIST` | `dashboard/web/dist` |
-| `--history-hours` | `HISTORY_HOURS` | `24` (how far back the time bar reaches) |
+| `--history-hours` | `HISTORY_HOURS` | `168` (a week: how far back the time bar reaches) |
 
 `--offset latest` shows only what happens after the bridge starts (plus whatever it has
 collected since); use `--offset earliest` to rebuild the picture from everything in the topics.
