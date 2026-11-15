@@ -432,7 +432,8 @@ button.rundown__row:hover { background: var(--panel-2); }
   .lead__road, .lead__facts { white-space: normal; }
   .borough { padding: 10px var(--s-3) var(--s-2); }
   .borough__now b { font-size: 1.125rem; }
-  .live { padding-left: 0; border-left: 0; }
+  .live { padding-left: 0; border-left: 0; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .live__stats { flex-direction: row; gap: 6px; min-width: 0; }
   .clock__time { font-size: 1.5rem; }
   .boroughs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .borough:last-child:nth-child(odd) { grid-column: 1 / -1; }
