@@ -35,7 +35,14 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header eventClock={state.eventClock} linkCount={totalLinks} reporting={reporting} health={health} />
+      <Header
+        eventClock={state.eventClock}
+        linkCount={totalLinks}
+        reporting={reporting}
+        health={health}
+        active={state.active}
+        onSelect={setSelectedId}
+      />
 
       <main className="stage">
         {geojson ? (

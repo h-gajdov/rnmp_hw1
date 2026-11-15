@@ -1,4 +1,4 @@
-import type { IncidentType, Level, Severity } from '../types'
+import type { Incident, IncidentType, Level, Severity } from '../types'
 
 // Congestion levels from the contract: ratio = avg speed / free-flow speed.
 // These four are the only saturated colors in the interface. Checked with the
@@ -43,3 +43,7 @@ export const SEVERITY_COLORS: Record<Severity, string> = {
 }
 
 export const SEVERITY_RANK: Record<Severity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
+
+/** Worst severity first, then the incident that has been open longest. */
+export const byWorst = (a: Incident, b: Incident) =>
+  SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || a.incident_start - b.incident_start
