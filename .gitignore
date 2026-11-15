@@ -1,0 +1,17 @@
+sources/
+data/
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+.playwright-mcp/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+node_modules/
+dist/
+.env
