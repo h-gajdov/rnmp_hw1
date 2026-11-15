@@ -131,12 +131,18 @@ sent this record out of order (debug / demo only, Flink must not rely on it).
 | type                     | when                                                                                       |
 |--------------------------|--------------------------------------------------------------------------------------------|
 | `SPEED_DROP`             | link was NORMAL and a reading falls below 50% of the link's baseline → incident opens      |
-| `PERSISTENT_CONGESTION`  | event-time timer (15 min after the drop) fires and the link is still below the threshold   |
+| `PERSISTENT_CONGESTION`  | event-time timer (15 min after the drop) fires and the link has not recovered yet          |
 | `RECOVERY`               | link in an incident and 2 consecutive readings are back above 75% of baseline (hysteresis) |
 | `SENSOR_SILENT`          | event-time timer: no reading from the link for 20 min (watermark passed last_seen + 20 min) |
 
-`severity`: `LOW` / `MEDIUM` / `HIGH` / `CRITICAL` (from ratio and duration). For `RECOVERY`,
+`severity`: `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`. For `SPEED_DROP` / `PERSISTENT_CONGESTION` from the ratio
+(`< 0.15` CRITICAL, `< 0.30` HIGH, `< 0.40` MEDIUM, else LOW), one level higher at 15+ min and again at 60+ min
+of duration; `RECOVERY` is always `LOW`, `SENSOR_SILENT` always `MEDIUM`. For `RECOVERY`,
 `duration_s` is the full incident duration and `min_speed_mph` the worst speed seen in it.
+For `SENSOR_SILENT`, `incident_start` is the time of the last reading, `duration_s` the silence so far and the
+speed fields describe the last reading. `ratio` is `speed_mph / baseline_mph` (not clamped, can be > 1).
+`event_time` of timer alerts (`PERSISTENT_CONGESTION`, `SENSOR_SILENT`) is the deadline itself
+(drop + 15 min, last_seen + 20 min).
 Thresholds (50%, 75%, 15 min, 20 min, 2 readings) are configurable CLI flags.
 
 Link state machine: `NORMAL → DROPPED → CONGESTED → (RECOVERY) → NORMAL`; `DROPPED → NORMAL` is also a
