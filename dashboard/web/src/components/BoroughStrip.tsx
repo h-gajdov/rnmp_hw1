@@ -42,6 +42,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
             onMouseEnter={() => onHover(name)}
             onMouseLeave={() => onHover(null)}
             onClick={toggle}
+            title={last ? `${name}: ${last.links} links reporting` : undefined}
           >
             <header className="borough__head">
               <button
@@ -62,7 +63,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
               label={`${name}: average speed per 5-minute window`}
               points={series.map((w) => ({ t: w.window_end, v: w.avg_speed_mph }))}
               yMax={yMax}
-              height={44}
+              height={40}
               color="var(--ink)"
               tooltip={(p) => {
                 const w = series.find((s) => s.window_end === p.t)!
@@ -75,7 +76,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
             />
             <footer className="borough__foot">
               <span>
-                {last ? <>{formatPercent(last.slow_share)} under 15 mph, {last.links} links</> : 'Waiting for the first window'}
+                {last ? <>{formatPercent(last.slow_share)} under 15 mph</> : 'Waiting for the first window'}
               </span>
               {incidents > 0 && <span className="borough__alerts">{incidents} open</span>}
             </footer>

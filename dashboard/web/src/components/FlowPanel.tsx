@@ -2,6 +2,7 @@
 // changed over the last hours, and how the congestion mix shifted.
 import { useMemo } from 'react'
 import { formatClock, formatMph, formatPercent } from '../lib/format'
+import { LEVELS } from '../lib/levels'
 import { levelMix, networkSeries } from '../lib/network'
 import type { BoroughStats, Incident, LinkPoint, LinkStats } from '../types'
 import { LevelMixChart } from './LevelMixChart'
@@ -33,40 +34,28 @@ export function FlowPanel({ boroughs, history, links, silent }: Props) {
   const ticks = yMax > 60 ? [20, 40, 60] : [20, 40]
 
   return (
-    <section className="block flow" aria-label="Network traffic flow">
+    <section className="block flow" aria-labelledby="flow-title">
       <header className="block__head">
-        <h2 className="block__title">Traffic flow</h2>
-        <span className="block__meta">All boroughs</span>
+        <h2 className="block__title" id="flow-title">Network speed</h2>
+        <span className="block__meta">All boroughs, per 5-minute window</span>
       </header>
 
-      <dl className="kpis">
-        <div className="kpi">
-          <dt>Network speed</dt>
-          <dd className="kpi__value">{now ? now.speed.toFixed(1) : '--'}<small> mph</small></dd>
-          <dd className="kpi__sub">
-            {delta === null ? 'Change shows after an hour' : (
-              <><span className={delta < 0 ? 'down' : 'up'} aria-hidden="true">{delta < 0 ? '▼' : '▲'}</span> {Math.abs(delta).toFixed(1)} mph vs 1 h ago</>
-            )}
-          </dd>
-        </div>
-        <div className="kpi">
-          <dt>Moving freely</dt>
-          <dd className="kpi__value">{reporting.length ? formatPercent(free / reporting.length) : '--'}</dd>
-          <dd className="kpi__sub">{free} of {reporting.length} segments</dd>
-        </div>
-        <div className="kpi">
-          <dt>Sensor reports</dt>
-          <dd className="kpi__value">{now ? now.readings : '--'}</dd>
-          <dd className="kpi__sub">in the 5 min to {now ? formatClock(now.t) : '--:--'}</dd>
-        </div>
-      </dl>
+      <p className="flow__now">
+        <span className="flow__value">{now ? now.speed.toFixed(1) : '--'}<small> mph</small></span>
+        <span className="flow__delta">
+          {delta === null
+            ? 'The change shows after an hour of windows'
+            : Math.abs(delta) < 0.05
+              ? 'Same as an hour ago'
+              : `${Math.abs(delta).toFixed(1)} mph ${delta < 0 ? 'slower' : 'faster'} than an hour ago`}
+        </span>
+      </p>
 
-      <h3 className="chart-title">Average speed per 5 min, mph</h3>
       <LineChart
         label="Network average speed per 5-minute window"
         points={shown.map((w) => ({ t: w.t, v: w.speed }))}
         yMax={yMax}
-        height={52}
+        height={56}
         color="var(--ink)"
         ticks={ticks}
         axis
@@ -76,8 +65,24 @@ export function FlowPanel({ boroughs, history, links, silent }: Props) {
         }}
       />
 
+      <dl className="flow__facts">
+        <div>
+          <dt>Moving freely</dt>
+          <dd><b>{reporting.length ? formatPercent(free / reporting.length) : '--'}</b> {free} of {reporting.length} segments</dd>
+        </div>
+        <div>
+          <dt>Sensor reports</dt>
+          <dd><b>{now ? now.readings : '--'}</b> in the 5 min to {now ? formatClock(now.t) : '--:--'}</dd>
+        </div>
+      </dl>
+
       <h3 className="chart-title">Congestion mix per window</h3>
-      <LevelMixChart mixes={mixes} height={30} />
+      <LevelMixChart mixes={mixes} height={32} />
+      <ul className="key" aria-hidden="true">
+        {LEVELS.map((l) => (
+          <li key={l.level}><span className="swatch" style={{ background: l.color }} />{l.label}</li>
+        ))}
+      </ul>
     </section>
   )
 }
