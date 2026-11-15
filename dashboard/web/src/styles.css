@@ -281,6 +281,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .gantry__clock { border-left: 0; padding-left: 0; }
   .gantry__title h1 { font-size: 1.5rem; }
   .network { width: auto; right: 12px; }
+  .network .caption { display: none; }
+  .live { justify-content: start; }
   .link-panel { width: auto; right: 12px; }
   .counters { grid-template-columns: repeat(2, 1fr); }
 }

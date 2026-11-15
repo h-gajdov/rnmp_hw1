@@ -27,7 +27,7 @@ export function LiveStatus({ health }: { health: FeedHealth }) {
         <b>{health.messagesPerSecond.toFixed(1)}</b> msg/s
       </span>
       <span className="live__stat">
-        last {health.lastMessageAt ? age(now - health.lastMessageAt) : 'never'}
+        {health.lastMessageAt ? `last message ${age(now - health.lastMessageAt)}` : 'no messages yet'}
       </span>
     </div>
   )
