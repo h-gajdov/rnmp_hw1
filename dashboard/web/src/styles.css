@@ -322,7 +322,7 @@ button.rundown__row:hover { background: var(--panel-2); }
 .rundown__name { font-size: var(--t-body); font-weight: 650; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rundown__meta b { font-weight: 650; color: var(--ink); }
 .rundown__meta { font-size: var(--t-meta); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rundown__num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rundown__num { position: relative; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rundown__speed { font-size: var(--t-body); font-weight: 650; }
 .rundown__open { font-size: var(--t-small); color: var(--ink-2); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
