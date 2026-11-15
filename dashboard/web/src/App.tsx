@@ -3,7 +3,6 @@ import { ActiveIncidents } from './components/ActiveIncidents'
 import { BoroughStrip } from './components/BoroughStrip'
 import { FlowPanel } from './components/FlowPanel'
 import { Header } from './components/Header'
-import { IncidentCounters } from './components/IncidentCounters'
 import { IncidentFeed } from './components/IncidentFeed'
 import { LinkPanel } from './components/LinkPanel'
 import { MapLegend } from './components/MapLegend'
@@ -95,7 +94,6 @@ export default function App() {
 
       <aside className="side">
         <FlowPanel boroughs={state.boroughs} history={state.history} links={state.links} silent={state.silent} />
-        <IncidentCounters counts={state.counts} />
         <ActiveIncidents
           active={state.active}
           eventClock={state.eventClock}
@@ -103,7 +101,13 @@ export default function App() {
           onClearFocus={clearFocus}
           onSelect={setSelectedId}
         />
-        <IncidentFeed incidents={state.recent} focus={focusBorough} onClearFocus={clearFocus} onSelect={setSelectedId} />
+        <IncidentFeed
+          incidents={state.recent}
+          counts={state.counts}
+          focus={focusBorough}
+          onClearFocus={clearFocus}
+          onSelect={setSelectedId}
+        />
       </aside>
     </div>
   )
