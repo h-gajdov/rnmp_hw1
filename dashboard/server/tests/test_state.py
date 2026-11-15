@@ -84,3 +84,11 @@ def test_counters_and_snapshot_is_json_serialisable():
     snap = json.loads(json.dumps(s.snapshot()))
     assert snap["readings_total"] == 1 and snap["late_total"] == 1
     assert len(snap["active_incidents"]) == 1
+
+
+def test_duplicate_alert_is_ignored():
+    s = DashboardState()
+    assert s.apply_incident(incident("SPEED_DROP", t=1_000)) is True
+    assert s.apply_incident(incident("SPEED_DROP", t=1_000)) is False  # redelivered
+    assert s.incident_counts["SPEED_DROP"] == 1
+    assert len(s.recent_incidents) == 1

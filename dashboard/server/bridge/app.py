@@ -1,6 +1,9 @@
 """ASGI application: Socket.IO for the live push + a small REST API + the built UI.
 
     browser  <--Socket.IO--  this bridge  <--aiokafka--  Flink output topics
+
+The endpoints that read the state are `async`, so they run on the event loop and
+never see the state half-way through an update by the Kafka feed.
 """
 
 import asyncio
@@ -10,12 +13,12 @@ from contextlib import asynccontextmanager
 
 import socketio
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 
 from .config import parse_args
 from .kafka_feed import run_forever
-from .state import DashboardState
+from .timeline import Timeline
 
 log = logging.getLogger("bridge")
 
@@ -46,7 +49,8 @@ class GeoJsonFile:
 
 
 def create_app(config):
-    state = DashboardState()
+    timeline = Timeline(keep_ms=int(config.history_hours * 3600 * 1000))
+    state = timeline.live
     geojson = GeoJsonFile(config.links_geojson)
     sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 
@@ -57,7 +61,7 @@ def create_app(config):
 
     @asynccontextmanager
     async def lifespan(_app):
-        task = asyncio.create_task(run_forever(config, state, sio))
+        task = asyncio.create_task(run_forever(config, timeline, sio))
         yield
         task.cancel()
 
@@ -68,11 +72,23 @@ def create_app(config):
         return geojson.load()
 
     @api.get("/api/snapshot")
-    def snapshot():
+    async def snapshot():
         return state.snapshot()
 
+    @api.get("/api/timeline")
+    async def timeline_summary():
+        """The event-time range the dashboard can travel over, with the network speed series."""
+        return timeline.summary()
+
+    @api.get("/api/state")
+    async def state_at(at: int = Query(..., description="event time in epoch ms")):
+        """The snapshot as it was at event time `at`. The log is copied here, on the
+        event loop; the replay runs in a thread so live pushes are not held up."""
+        frozen = timeline.frozen()
+        return await asyncio.to_thread(lambda: frozen.state_at(at).snapshot())
+
     @api.get("/api/health")
-    def health():
+    async def health():
         return {"ok": True, "topics": config.topics, "event_clock": state.event_clock}
 
     if config.web_dist.is_dir():
