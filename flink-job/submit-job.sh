@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Submits the Flink job (jar in /opt/flink/usrlib) to a running session cluster, then exits.
+# Submits the Flink job (jar in /opt/flink/usrlib) to a running session cluster, waits until it runs, then exits.
 # All arguments are passed to the job, e.g.: submit-job.sh --bootstrap kafka:9093 --offset earliest
 set -euo pipefail
 
 JOBMANAGER="${JOBMANAGER:-jobmanager:8081}"
 JOB_NAME="NYC traffic analytics and incident detection"   # as in TrafficIncidentJob's env.execute(...)
+RUNNING_TIMEOUT_S="${RUNNING_TIMEOUT_S:-120}"
 
 echo "Waiting for the Flink JobManager at ${JOBMANAGER} with a registered TaskManager ..."
 until curl -sf "http://${JOBMANAGER}/overview" | grep -q '"taskmanagers":[1-9]'; do
@@ -19,4 +20,26 @@ if curl -sf "http://${JOBMANAGER}/jobs/overview" | tr '{' '\n' \
 fi
 
 echo "Submitting with arguments: $*"
-exec flink run -d -m "${JOBMANAGER}" /opt/flink/usrlib/traffic-job.jar "$@"
+output="$(flink run -d -m "${JOBMANAGER}" /opt/flink/usrlib/traffic-job.jar "$@")"
+echo "${output}"
+job_id="$(echo "${output}" | grep -o 'JobID [0-9a-f]\{32\}' | tail -1 | cut -d' ' -f2)"
+
+# Wait until every task of the job is RUNNING, so that whoever starts after this container
+# (the producer in docker compose) does not write before a `--offset latest` source is reading.
+echo "Waiting until all tasks of job ${job_id} are RUNNING ..."
+deadline=$((SECONDS + RUNNING_TIMEOUT_S))
+while true; do
+  tasks="$(curl -sf "http://${JOBMANAGER}/jobs/overview" | grep -o "\"jid\":\"${job_id}\".*" \
+           | grep -o '"tasks":{[^}]*}' | head -1 || true)"
+  running="$(echo "${tasks}" | grep -o '"running":[0-9]*' | cut -d: -f2)"
+  total="$(echo "${tasks}" | grep -o '"total":[0-9]*' | cut -d: -f2)"
+  if [ -n "${running}" ] && [ "${running}" = "${total}" ]; then
+    echo "Job ${job_id} is RUNNING (${running}/${total} tasks)."
+    exit 0
+  fi
+  if [ "${SECONDS}" -ge "${deadline}" ]; then
+    echo "Job ${job_id} not running after ${RUNNING_TIMEOUT_S}s (tasks: ${tasks})" >&2
+    exit 1
+  fi
+  sleep 1
+done
