@@ -51,6 +51,7 @@ Every flag can also be set with the environment variable in brackets (used by Do
 | `--limit` [`LIMIT`] | `0` (all) | stop after N records |
 | `--start-at` [`START_AT`] | – | skip to a NY time of day, e.g. `07:00` |
 | `--loop` [`LOOP=true`] | off | replay forever, each round shifted one day later |
+| `--continue` / `--no-continue` [`CONTINUE`] | on | if the topic already holds the replayed days, shift the replay whole days later |
 | `--progress-s` [`PROGRESS_S`] | `5` | seconds between progress lines |
 | `--kafka-wait-s` [`KAFKA_WAIT_S`] | `120` | how long to retry until Kafka is reachable |
 

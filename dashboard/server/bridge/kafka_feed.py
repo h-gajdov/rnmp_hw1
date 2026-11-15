@@ -15,15 +15,6 @@ from aiokafka.errors import KafkaError
 
 log = logging.getLogger("bridge.kafka")
 
-APPLY = {
-    "link_stats": "apply_link_stats",
-    "borough_stats": "apply_borough_stats",
-    "incident": "apply_incident",
-    "reading": "apply_reading",
-    "late_reading": "apply_late_reading",
-}
-
-
 def compact_reading(msg):
     """The browser only needs a few fields of a raw reading."""
     return {"link_id": msg["link_id"], "speed_mph": msg["speed_mph"], "event_time": msg["event_time"]}
@@ -53,8 +44,8 @@ async def start_consumer(config):
             delay = min(delay * 2, 10)
 
 
-async def run_kafka_feed(config, state, sio):
-    """Read forever: update the snapshot state, then push the message to every client."""
+async def run_kafka_feed(config, timeline, sio):
+    """Read forever: update the state and the history, then push the message to every client."""
     topics = config.topics
     consumer = await start_consumer(config)
     try:
@@ -62,7 +53,8 @@ async def run_kafka_feed(config, state, sio):
             kind = topics[record.topic]
             try:
                 msg = json.loads(record.value)
-                getattr(state, APPLY[kind])(msg)
+                if not timeline.apply(kind, msg):
+                    continue  # duplicate alert, already shown
             except (ValueError, KeyError, TypeError) as e:
                 log.warning("skipping malformed message on %s: %s", record.topic, e)
                 continue
@@ -72,11 +64,11 @@ async def run_kafka_feed(config, state, sio):
         await consumer.stop()
 
 
-async def run_forever(config, state, sio):
+async def run_forever(config, timeline, sio):
     """Keep the feed alive: if the consumer crashes, log it and start a new one."""
     while True:
         try:
-            await run_kafka_feed(config, state, sio)
+            await run_kafka_feed(config, timeline, sio)
         except asyncio.CancelledError:
             raise
         except Exception:

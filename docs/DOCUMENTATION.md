@@ -265,6 +265,11 @@ measured average speed, so the traffic flow is visible on the map. The side pane
 browser from the existing topics), alert counters, the open incidents and the alert log; the bottom strip shows
 per-borough speed charts from `traffic-borough-stats`. Clicking a borough (on the map or in the strip) zooms to
 it and narrows the incident lists to it; clicking a segment opens its speed history and alerts.
+A time bar in the header travels back in time: the bridge keeps every message of the last week of event time
+and rebuilds the state at any moment by replaying the messages up to it (from saved checkpoints, a few
+milliseconds), so the whole page can show, for example, the night at 03:00 next to the evening rush at 17:30, the
+same hour on another day (picked from every replayed day), or play the stream back in 5-minute steps. A restarted
+producer whose days are already in the topic continues on the next day, so event time only moves forward.
 
 ## 9. How to run
 

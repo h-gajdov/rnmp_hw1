@@ -12,9 +12,10 @@ A Flink 2.3 job (Java 17) processes it in event time:
   `SPEED_DROP`, `PERSISTENT_CONGESTION`, `RECOVERY` and `SENSOR_SILENT` alerts.
 
 All results are JSON messages in Kafka topics. A live dashboard (React + a Python Socket.IO bridge) shows them on
-a map while the stream is flowing. Everything starts with one `docker compose up`.
+a map while the stream is flowing, and its time bar travels back through the day (night, lunch, rush hours).
+Everything starts with one `docker compose up`.
 
-![Live dashboard](docs/img/dashboard.png)
+![Live dashboard, travelled back to the evening rush hour](docs/img/dashboard.png)
 
 Documentation (dataset, architecture, both modules, watermarks, earliest/latest comparison):
 [`docs/DOCUMENTATION.pdf`](docs/DOCUMENTATION.pdf) (source: [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md)).
@@ -65,6 +66,7 @@ Useful settings (environment variables or a `.env` file, all listed in [`.env.ex
 ```sh
 START_AT=06:00 SPEEDUP=120 docker compose up -d --build   # start at the morning rush hour: alerts within ~2 min
 LOOP=true docker compose up -d --build                    # replay forever (each round one day later)
+DATA_START=2026-10-01 DATA_END=2026-10-04 docker compose up -d --build  # three real days (delete data/ first)
 FLINK_OFFSET=earliest docker compose up -d --build        # the job reads the input topic from the beginning
 FLINK_MAX_OOO_S=30 docker compose up -d --build           # watermark bound 30 s < producer delay 120 s:
                                                           #   late readings appear in traffic-late-readings

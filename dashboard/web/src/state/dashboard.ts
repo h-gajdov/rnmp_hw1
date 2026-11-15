@@ -50,7 +50,7 @@ export const initialState: DashboardState = {
 
 const byLink = (list: Incident[]) => Object.fromEntries(list.map((i) => [i.link_id, i]))
 
-function fromSnapshot(s: Snapshot): DashboardState {
+export function fromSnapshot(s: Snapshot): DashboardState {
   return {
     eventClock: s.event_clock,
     links: s.links,
