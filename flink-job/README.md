@@ -49,7 +49,7 @@ Java 17 is pinned in `.mise.toml` (`mise install` once). Maven comes with the wr
 
 ```sh
 cd flink-job
-./mvnw test              # 18 unit tests: window math, detector with Flink's operator test harness, JSON contract
+./mvnw test              # 19 unit tests: window math, detector with Flink's operator test harness, JSON contract
 ./mvnw clean package     # fat jar: target/traffic-flink-job-1.0.jar (Kafka connector + Jackson inside, Flink "provided")
 ```
 
