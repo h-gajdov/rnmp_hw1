@@ -173,13 +173,13 @@ b { font-weight: 650; }
   line-height: 1.15;
   white-space: nowrap;
   color: var(--ink);
-  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff;
+  background: rgb(251 251 249 / 0.82);
   transition: opacity 0.2s, background-color 0.2s, color 0.2s;
 }
 .borough-label__name { font-size: var(--t-body); font-weight: 750; }
 .borough-label__speed { font-size: var(--t-meta); font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.borough-label:hover, .borough-label.is-hover { background: rgb(255 255 255 / 0.85); box-shadow: 0 0 0 1px var(--rule-strong); }
-.borough-label.is-focus { background: var(--ink); color: #fff; text-shadow: none; }
+.borough-label:hover, .borough-label.is-hover { background: #fff; box-shadow: 0 0 0 1px var(--ink-3); }
+.borough-label.is-focus { background: var(--ink); color: #fff; }
 .borough-label.is-focus .borough-label__speed { color: #D5D9DC; }
 .borough-label.is-dim { opacity: 0.45; }
 
@@ -362,6 +362,7 @@ button.rundown__row:hover { background: var(--panel-2); }
 .borough.is-dim { opacity: 0.55; }
 .borough.is-dim:hover { opacity: 1; }
 .borough__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); margin-bottom: 6px; }
+.borough .chart__plot { border-bottom: 1px solid var(--rule); }
 .borough__name { font-size: var(--t-heading); font-weight: 700; white-space: nowrap; }
 .borough__now { font-size: var(--t-small); color: var(--ink-2); white-space: nowrap; }
 .borough__now b { font-size: var(--t-figure); color: var(--ink); font-weight: 700; }
@@ -428,6 +429,9 @@ button.rundown__row:hover { background: var(--panel-2); }
   .topbar__end { justify-content: space-between; gap: var(--s-3); order: 2; }
   .clock { gap: var(--s-2); }
   .lead { order: 3; padding: var(--s-2) 0 0; border-left: 0; border-top: 1px solid var(--band-rule); }
+  .lead__road, .lead__facts { white-space: normal; }
+  .borough { padding: 10px var(--s-3) var(--s-2); }
+  .borough__now b { font-size: 1.125rem; }
   .live { padding-left: 0; border-left: 0; }
   .clock__time { font-size: 1.5rem; }
   .boroughs { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -65,6 +65,7 @@ export function BoroughStrip({ boroughs, active, focus, hover, onFocus, onHover 
               yMax={yMax}
               height={40}
               color="var(--ink)"
+              area={false}
               tooltip={(p) => {
                 const w = series.find((s) => s.window_end === p.t)!
                 return (

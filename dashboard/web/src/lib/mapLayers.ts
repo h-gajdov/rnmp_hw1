@@ -28,8 +28,10 @@ export function restyleBasemap(m: MapLibreMap) {
     if (m.getLayer(id)) m.setPaintProperty(id, 'fill-opacity', 0)
   }
   if (m.getLayer('water')) m.setPaintProperty('water', 'fill-color', WATER)
-  for (const id of ['boundary_county', 'boundary_state']) {
-    if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', 'none')
+  // City-size place names ("New York", "Newark") would sit on top of the
+  // borough labels and links; towns around the city stay for orientation.
+  for (const layer of m.getStyle().layers) {
+    if (/^(boundary_(county|state)|place_(city|capital)_)/.test(layer.id)) m.setLayoutProperty(layer.id, 'visibility', 'none')
   }
 }
 
