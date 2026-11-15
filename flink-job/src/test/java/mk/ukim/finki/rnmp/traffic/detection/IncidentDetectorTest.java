@@ -103,11 +103,11 @@ class IncidentDetectorTest {
     void recoveryNeedsConsecutiveGoodReadings() throws Exception {
         warmUp();
         send(12, 15);
-        send(31, 20);     // good
-        send(25, 25);     // below 75% again: the streak starts over
-        send(31, 30);     // good
+        send(31, 17);     // good
+        send(25, 19);     // below 75% again: the streak starts over
+        send(31, 21);     // good
         assertEquals(1, alerts().size());
-        send(32, 35);     // good, second in a row
+        send(32, 23);     // good, second in a row
         assertEquals(AlertType.RECOVERY, alerts().get(1).type);
     }
 
@@ -130,6 +130,37 @@ class IncidentDetectorTest {
         send(40, 61);     // the link is back, the timer is armed again
         watermark(81);
         assertEquals(2, alerts().size());
+    }
+
+    @Test
+    void baselineIsLearnedAgainAfterSilence() throws Exception {
+        warmUp();         // baseline 40
+        send(15, 60);     // first reading after 50 min of silence: warm-up again, not a SPEED_DROP
+        send(16, 65);
+        send(14, 70);
+        send(15, 75);     // normal for the new baseline of 15
+        assertEquals(List.of(AlertType.SENSOR_SILENT), alerts().stream().map(a -> a.type).toList());
+        send(5, 80);      // 33% of the new baseline: a real drop
+        assertEquals(AlertType.SPEED_DROP, alerts().get(1).type);
+    }
+
+    /** Fast replay: the watermark lags behind, but a later reading proves the deadlines have passed. */
+    @Test
+    void overdueTimersAreHandledByTheNextReading() throws Exception {
+        warmUp();
+        send(12, 15);
+        send(14, 31);     // no watermark at all, but minute 31 is past the 15-min check at minute 30
+        send(13, 60);     // and minute 60 is past the silence deadline of the reading at minute 31
+
+        List<IncidentAlert> alerts = alerts();
+        assertEquals(List.of(AlertType.SPEED_DROP, AlertType.PERSISTENT_CONGESTION, AlertType.SENSOR_SILENT),
+                alerts.stream().map(a -> a.type).toList());
+        assertEquals(at(30), alerts.get(1).eventTime);
+        assertEquals(12.0, alerts.get(1).speedMph, 1e-9);    // the speed known at minute 30
+        assertEquals(at(51), alerts.get(2).eventTime);
+
+        watermark(200);   // the deleted timers do not fire a second time; only the new silence timer does
+        assertEquals(4, alerts().size());
     }
 
     @Test

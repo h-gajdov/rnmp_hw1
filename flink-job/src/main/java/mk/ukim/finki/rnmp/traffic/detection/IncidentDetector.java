@@ -50,6 +50,12 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
         if (s == null) {
             s = new LinkState();
         }
+        fireOverdueDeadlines(s, reading.eventTime, ctx.getCurrentKey(), ctx, out);
+
+        boolean backFromSilence = s.readingsSeen > 0 && reading.eventTime - s.lastSeen >= settings.silenceMs();
+        if (backFromSilence && s.phase == Phase.NORMAL) {
+            s.readingsSeen = 0;   // the baseline is stale after a long gap (e.g. night -> rush hour): learn it again
+        }
         s.readingsSeen++;
         s.linkName = reading.linkName;
         s.borough = reading.borough;
@@ -124,28 +130,59 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
             return;
         }
         if (timestamp == s.persistentTimer) {
-            s.persistentTimer = 0;
-            if (s.phase == Phase.DROPPED) {               // has not recovered within 15 min
-                s.phase = Phase.CONGESTED;
-                double ratio = s.lastSpeedMph / s.baselineMph;
-                long durationS = (timestamp - s.incidentStart) / 1000;
-                out.collect(alert(AlertType.PERSISTENT_CONGESTION, ctx.getCurrentKey(), s, timestamp,
-                        s.lastSpeedMph, severity(ratio, durationS),
-                        String.format(Locale.ROOT, "Still congested after %d min: %.1f mph (%.0f%% of the usual %.1f mph)",
-                                durationS / 60, s.lastSpeedMph, ratio * 100, s.baselineMph)));
-            }
+            checkPersistent(s, ctx.getCurrentKey(), out);
         }
         if (timestamp == s.silenceTimer) {
-            s.silenceTimer = 0;                           // not re-armed: one alert until the link reports again
-            IncidentAlert silent = alert(AlertType.SENSOR_SILENT, ctx.getCurrentKey(), s, timestamp,
-                    s.lastSpeedMph, Severity.MEDIUM,
-                    String.format(Locale.ROOT, "No reading for %d min (last speed %.1f mph)",
-                            settings.silenceMs() / 60_000, s.lastSpeedMph));
-            silent.incidentStart = s.lastSeen;            // the silence started with the last reading
-            silent.durationS = (timestamp - s.lastSeen) / 1000;
-            out.collect(silent);
+            reportSilence(s, ctx.getCurrentKey(), out);
         }
         linkState.update(s);
+    }
+
+    /**
+     * A timer fires only when the WATERMARK passes it. When a topic is read much faster than real time
+     * (--offset earliest), one partition can run ahead of the watermark, so the next reading of a link may
+     * arrive before the timer that should have fired in between. Such a reading proves that the deadline
+     * has passed in event time, so the timer's work is done here and now. That way the alerts depend only
+     * on the event times, not on how fast Kafka is read (same results for earliest and latest).
+     */
+    private void fireOverdueDeadlines(LinkState s, long eventTime, String linkId, Context ctx,
+                                      Collector<IncidentAlert> out) {
+        if (s.persistentTimer != 0 && eventTime >= s.persistentTimer) {
+            ctx.timerService().deleteEventTimeTimer(s.persistentTimer);
+            checkPersistent(s, linkId, out);
+        }
+        if (s.silenceTimer != 0 && eventTime >= s.silenceTimer) {
+            ctx.timerService().deleteEventTimeTimer(s.silenceTimer);
+            reportSilence(s, linkId, out);
+        }
+    }
+
+    /** 15 min after the drop: still not recovered -> PERSISTENT_CONGESTION. */
+    private void checkPersistent(LinkState s, String linkId, Collector<IncidentAlert> out) {
+        long time = s.persistentTimer;
+        s.persistentTimer = 0;
+        if (s.phase != Phase.DROPPED) {
+            return;
+        }
+        s.phase = Phase.CONGESTED;
+        double ratio = s.lastSpeedMph / s.baselineMph;
+        long durationS = (time - s.incidentStart) / 1000;
+        out.collect(alert(AlertType.PERSISTENT_CONGESTION, linkId, s, time, s.lastSpeedMph,
+                severity(ratio, durationS),
+                String.format(Locale.ROOT, "Still congested after %d min: %.1f mph (%.0f%% of the usual %.1f mph)",
+                        durationS / 60, s.lastSpeedMph, ratio * 100, s.baselineMph)));
+    }
+
+    /** silenceMs after the last reading without a new one -> SENSOR_SILENT (once, until the link reports again). */
+    private void reportSilence(LinkState s, String linkId, Collector<IncidentAlert> out) {
+        long time = s.silenceTimer;
+        s.silenceTimer = 0;
+        IncidentAlert silent = alert(AlertType.SENSOR_SILENT, linkId, s, time, s.lastSpeedMph, Severity.MEDIUM,
+                String.format(Locale.ROOT, "No reading for %d min (last speed %.1f mph)",
+                        settings.silenceMs() / 60_000, s.lastSpeedMph));
+        silent.incidentStart = s.lastSeen;                // the silence started with the last reading
+        silent.durationS = (time - s.lastSeen) / 1000;
+        out.collect(silent);
     }
 
     /** Deletes the old silence timer and registers a new one, silenceMs after the latest reading. */
