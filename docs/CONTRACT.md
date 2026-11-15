@@ -131,7 +131,7 @@ sent this record out of order (debug / demo only, Flink must not rely on it).
 | type                     | when                                                                                       |
 |--------------------------|--------------------------------------------------------------------------------------------|
 | `SPEED_DROP`             | link was NORMAL and a reading falls below 50% of the link's baseline → incident opens      |
-| `PERSISTENT_CONGESTION`  | event-time timer (15 min after the drop) fires and the link has not recovered yet          |
+| `PERSISTENT_CONGESTION`  | event-time timer (15 min after the drop) fires, the link has not recovered and its latest reading is still slow |
 | `RECOVERY`               | link in an incident and 2 consecutive readings are back above 75% of baseline (hysteresis) |
 | `SENSOR_SILENT`          | event-time timer: no reading from the link for 20 min (watermark passed last_seen + 20 min) |
 

@@ -157,11 +157,15 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
         }
     }
 
-    /** 15 min after the drop: still not recovered -> PERSISTENT_CONGESTION. */
+    /**
+     * 15 min after the drop: still slow -> PERSISTENT_CONGESTION. If the latest reading is already back above
+     * the recovery threshold the link is on its way back (RECOVERY follows with the next good reading), so it
+     * is not escalated.
+     */
     private void checkPersistent(LinkState s, String linkId, Collector<IncidentAlert> out) {
         long time = s.persistentTimer;
         s.persistentTimer = 0;
-        if (s.phase != Phase.DROPPED) {
+        if (s.phase != Phase.DROPPED || s.readingsAboveRecovery > 0) {
             return;
         }
         s.phase = Phase.CONGESTED;

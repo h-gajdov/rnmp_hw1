@@ -37,7 +37,7 @@ NORMAL ──reading < 50% of baseline──► DROPPED ──timer: 15 min late
 - **Hysteresis**: an incident opens below 50% but closes only at 75%, twice in a row, so a link hovering around
   50% does not flap.
 - **Timers** (event time, i.e. they fire when the *watermark* passes them):
-  - persistence timer at drop + 15 min → `PERSISTENT_CONGESTION` if the link has not recovered; deleted on recovery;
+  - persistence timer at drop + 15 min → `PERSISTENT_CONGESTION` if the link has not recovered and its latest reading is still below the recovery threshold; deleted on recovery;
   - silence timer at last reading + 20 min, moved forward by every reading → `SENSOR_SILENT` (once per silence).
 - If the next reading of a link already lies past a deadline whose timer has not fired yet (happens when a topic is
   read much faster than real time, `--offset earliest`), the reading handles that deadline first. Alerts therefore

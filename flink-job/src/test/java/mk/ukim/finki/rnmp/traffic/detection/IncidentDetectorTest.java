@@ -100,6 +100,18 @@ class IncidentDetectorTest {
     }
 
     @Test
+    void noPersistentAlertWhenTheLinkIsAlreadyRecovering() throws Exception {
+        warmUp();
+        send(12, 15);
+        send(14, 20);
+        send(35, 25);     // first good reading: on its way back
+        watermark(30);    // 15-min check: not escalated
+        send(36, 30);     // second good reading: recovered
+
+        assertEquals(List.of(AlertType.SPEED_DROP, AlertType.RECOVERY), alerts().stream().map(a -> a.type).toList());
+    }
+
+    @Test
     void recoveryNeedsConsecutiveGoodReadings() throws Exception {
         warmUp();
         send(12, 15);
