@@ -1,3 +1,4 @@
+import { boroughColor } from '../lib/boroughs'
 import { formatClock, formatMph, formatPercent, prettyLinkName } from '../lib/format'
 import { INCIDENT_LABELS, levelInfo } from '../lib/levels'
 import type { Incident, LinkFeature, LinkPoint, LinkStats } from '../types'
@@ -21,19 +22,20 @@ export function LinkPanel({ feature, stats, history, incidents, onClose }: Props
     <aside className="panel link-panel" aria-label="Selected road segment">
       <header className="link-panel__head">
         <div>
-          <p className="link-panel__where">{borough}, link {link_id}</p>
+          <p className="link-panel__where">
+            <span className="swatch swatch--round" style={{ background: boroughColor(borough) }} />
+            {borough}, link {link_id}
+          </p>
           <h2 className="link-panel__name">{prettyLinkName(link_name)}</h2>
         </div>
-        <button className="icon-button" onClick={onClose} aria-label="Close details" title="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11" /></svg>
-        </button>
+        <button className="icon-button" onClick={onClose} aria-label="Close details">×</button>
       </header>
 
       {stats && level ? (
         <>
           <div className="link-panel__now">
             <span className="link-panel__speed">{stats.avg_speed_mph.toFixed(1)}<small> mph</small></span>
-            <span className="level-mark">
+            <span className="level-chip" style={{ '--chip': level.color } as React.CSSProperties}>
               <span className="swatch" style={{ background: level.color }} />{level.label}
             </span>
           </div>

@@ -26,7 +26,7 @@ export function MapLegend({ totalLinks, links, silent, layers, onToggle }: Props
 
   const rows = [
     ...LEVELS.map((l) => ({ key: l.level, label: l.label, color: l.color, n: counts[l.level] })),
-    { key: 'SILENT', label: 'Silent sensor', color: SILENT_COLOR, n: silentCount },
+    { key: 'SILENT', label: 'Sensor silent', color: SILENT_COLOR, n: silentCount },
     { key: 'NONE', label: 'No data', color: NO_DATA_COLOR, n: noData },
   ]
 

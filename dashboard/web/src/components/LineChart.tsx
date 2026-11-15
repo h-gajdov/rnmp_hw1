@@ -14,14 +14,13 @@ interface Props {
   reference?: number // dashed horizontal line, e.g. the free-flow speed
   ticks?: number[] // solid hairline gridlines with a value label
   axis?: boolean // first and last time under the plot
-  area?: boolean // light wash under the line
   tooltip: (p: ChartPoint) => ReactNode
   label: string
 }
 
 const W = 300 // viewBox width; the SVG stretches to its container
 
-export function LineChart({ points, yMax, height, color = 'var(--ink-2)', reference, ticks, axis, area: wash = true, tooltip, label }: Props) {
+export function LineChart({ points, yMax, height, color = 'var(--ink-2)', reference, ticks, axis, tooltip, label }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   if (points.length < 2) {
     return <div className="chart chart--empty" style={{ height: height + (axis ? 18 : 0) }}>Waiting for more windows</div>
@@ -63,7 +62,7 @@ export function LineChart({ points, yMax, height, color = 'var(--ink-2)', refere
           {reference !== undefined && (
             <line className="chart__ref" x1={0} x2={W} y1={y(reference)} y2={y(reference)} vectorEffect="non-scaling-stroke" />
           )}
-          {wash && <path d={area} fill={color} opacity={0.06} />}
+          <path d={area} fill={color} opacity={0.1} />
           <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           {hp && (
             <line className="chart__cross" x1={x(hp.t)} x2={x(hp.t)} y1={0} y2={height} vectorEffect="non-scaling-stroke" />

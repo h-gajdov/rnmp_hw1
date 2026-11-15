@@ -1,7 +1,10 @@
-import { formatDurationShort, prettyLinkName } from '../lib/format'
-import { byWorst, INCIDENT_LABELS, SEVERITY_COLORS } from '../lib/levels'
-import type { Incident } from '../types'
+import { formatDuration, formatMph, prettyLinkName } from '../lib/format'
+import { INCIDENT_LABELS } from '../lib/levels'
+import type { Incident, Severity } from '../types'
 import { FocusChip } from './FocusChip'
+import { IncidentIcon } from './IncidentIcon'
+
+const RANK: Record<Severity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
 
 interface Props {
   active: Record<string, Incident>
@@ -11,16 +14,15 @@ interface Props {
   onSelect: (linkId: string) => void
 }
 
-/** Incidents that have opened but not recovered yet, worst first, in fixed
- *  columns so a row can change in place without the list jumping around. */
+/** Incidents that have opened but not recovered yet, worst first. */
 export function ActiveIncidents({ active, eventClock, focus, onClearFocus, onSelect }: Props) {
   const list = Object.values(active)
     .filter((i) => focus === null || i.borough === focus)
-    .sort(byWorst)
+    .sort((a, b) => RANK[a.severity] - RANK[b.severity] || a.incident_start - b.incident_start)
   return (
-    <section className="block block--open" aria-labelledby="open-title">
+    <section className="block block--open">
       <header className="block__head">
-        <h2 className="block__title" id="open-title">
+        <h2 className="block__title">
           Open incidents <span className="count">{list.length}</span>
         </h2>
         {focus && <FocusChip borough={focus} onClear={onClearFocus} />}
@@ -30,33 +32,26 @@ export function ActiveIncidents({ active, eventClock, focus, onClearFocus, onSel
           {focus ? `No open incidents in ${focus}.` : 'No open incidents. Every monitored road is above half its usual speed.'}
         </p>
       ) : (
-        <div className="rundown">
-          <div className="rundown__row rundown__row--head" aria-hidden="true">
-            <span />
-            <span>Road, worst first</span>
-            <span className="rundown__num">mph</span>
-            <span className="rundown__num">Open</span>
-          </div>
-          <ul className="rundown__body" aria-label="Open incidents, worst first">
-            {list.map((i) => (
-              <li key={i.link_id}>
-                <button type="button" className="rundown__row" onClick={() => onSelect(i.link_id)}>
-                  <span className="sev-mark" style={{ background: SEVERITY_COLORS[i.severity] }} aria-hidden="true" />
-                  <span className="rundown__road">
-                    <span className="rundown__name">{prettyLinkName(i.link_name)}</span>
-                    <span className="rundown__meta">
-                      <b>{i.severity[0] + i.severity.slice(1).toLowerCase()}</b> {INCIDENT_LABELS[i.type].toLowerCase()}, {i.borough}
-                    </span>
+        <ul className="open-list">
+          {list.map((i) => (
+            <li key={i.link_id}>
+              <button className="open-item" onClick={() => onSelect(i.link_id)}>
+                <span className={`sev-bar sev-bar--${i.severity.toLowerCase()}`} aria-hidden="true" />
+                <IncidentIcon type={i.type} size={18} />
+                <span className="open-item__body">
+                  <span className="open-item__name">{prettyLinkName(i.link_name)}</span>
+                  <span className="open-item__meta">
+                    {INCIDENT_LABELS[i.type]}, {i.borough}, open {formatDuration((eventClock - i.incident_start) / 1000)}
                   </span>
-                  <span className="rundown__num rundown__speed">{i.speed_mph.toFixed(1)}<span className="sr-only"> mph</span></span>
-                  <span className="rundown__num rundown__open">
-                    <span className="sr-only">open for </span>{formatDurationShort((eventClock - i.incident_start) / 1000)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                </span>
+                <span className="open-item__speed">
+                  <b>{formatMph(i.speed_mph)}</b>
+                  <span className={`sev sev--${i.severity.toLowerCase()}`}>{i.severity.toLowerCase()}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   )

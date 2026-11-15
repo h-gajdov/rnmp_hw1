@@ -3,36 +3,28 @@
 // map component calls setFeatureState(link, { ratio, silent, dim }) whenever
 // a new window arrives or the borough focus changes.
 import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl'
+import { BOROUGHS } from './boroughs'
 import { INCIDENT_COLORS, LEVELS, NO_DATA_COLOR, SILENT_COLOR } from './levels'
 
 export const BASEMAP = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
 
-// The dark basemap is retinted to neutral charcoal: the region outside the
-// city recedes, water is near-black and the five boroughs are drawn on top as
-// flat graphite land a step lighter, so the monitored city reads first.
-const REGION = '#121417'
-const WATER = '#08090B'
-const LAND = '#1E2227'
-const INK = '#E6E8EA'
-const CASING = '#08090B'
+// Basemap retinted to the console's slate: land a step above the page,
+// water darker, labels quiet so the traffic layers stay in front.
+const LAND = '#121a24'
+const WATER = '#0a0f15'
 
 export function restyleBasemap(m: MapLibreMap) {
   for (const layer of m.getStyle().layers) {
     if (layer.type === 'symbol') {
-      m.setPaintProperty(layer.id, 'text-opacity', 0.5)
-      m.setPaintProperty(layer.id, 'text-halo-color', REGION)
+      m.setPaintProperty(layer.id, 'text-opacity', 0.42)
+      m.setPaintProperty(layer.id, 'text-halo-color', WATER)
     }
   }
-  m.setPaintProperty('background', 'background-color', REGION)
-  for (const id of ['landcover', 'landuse', 'landuse_residential', 'park_national_park', 'park_nature_reserve']) {
-    if (m.getLayer(id)) m.setPaintProperty(id, 'fill-opacity', 0)
+  m.setPaintProperty('background', 'background-color', LAND)
+  for (const id of ['landcover', 'landuse', 'park_national_park', 'park_nature_reserve']) {
+    if (m.getLayer(id)) m.setPaintProperty(id, 'fill-color', LAND)
   }
   if (m.getLayer('water')) m.setPaintProperty('water', 'fill-color', WATER)
-  // City-size place names ("New York", "Newark") would sit on top of the
-  // borough labels and links; towns around the city stay for orientation.
-  for (const layer of m.getStyle().layers) {
-    if (/^(boundary_(county|state)|place_(city|capital)_)/.test(layer.id)) m.setLayoutProperty(layer.id, 'visibility', 'none')
-  }
 }
 
 /** First basemap road layer: borough areas go below it, so roads stay crisp. */
@@ -41,19 +33,25 @@ export const BELOW_ROADS = 'tunnel_service_case'
 const color = (level: string) => LEVELS.find((l) => l.level === level)!.color
 const ratio: ExpressionSpecification = ['to-number', ['feature-state', 'ratio'], 1]
 const dimmed: ExpressionSpecification = ['boolean', ['feature-state', 'dim'], false]
+
+const boroughColor: ExpressionSpecification = [
+  'match', ['get', 'borough'],
+  ...BOROUGHS.flatMap((b) => [b.name, b.color]),
+  '#8a97a6',
+] as unknown as ExpressionSpecification
+
 const hovered: ExpressionSpecification = ['boolean', ['feature-state', 'hover'], false]
 const selected: ExpressionSpecification = ['boolean', ['feature-state', 'selected'], false]
 
-// Flat land divided by water. Brooklyn and Queens share a land border, so a
-// faint hairline separates them; hover and focus draw it in light ink.
 export const boroughLayers: LayerSpecification[] = [
   {
     id: 'borough-fill',
     type: 'fill',
     source: 'boroughs',
     paint: {
-      'fill-color': ['case', selected, '#252A30', hovered, '#252A30', dimmed, '#17191C', LAND],
-      'fill-color-transition': { duration: 200 },
+      'fill-color': boroughColor,
+      'fill-opacity': ['case', selected, 0.2, hovered, 0.18, dimmed, 0.03, 0.11],
+      'fill-opacity-transition': { duration: 250 },
     },
   },
   {
@@ -62,9 +60,10 @@ export const boroughLayers: LayerSpecification[] = [
     source: 'boroughs',
     layout: { 'line-join': 'round' },
     paint: {
-      'line-color': ['case', selected, INK, hovered, INK, '#353B42'],
-      'line-width': ['case', selected, 1.6, hovered, 1.2, 0.6],
-      'line-opacity': ['case', selected, 0.85, hovered, 0.6, 1],
+      'line-color': boroughColor,
+      'line-width': ['case', selected, 2, hovered, 1.6, 1],
+      'line-opacity': ['case', selected, 0.95, hovered, 0.9, dimmed, 0.2, 0.6],
+      'line-opacity-transition': { duration: 250 },
     },
   },
 ]
@@ -96,9 +95,9 @@ export const linkLayers: LayerSpecification[] = [
     source: 'links',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'line-color': CASING,
+      'line-color': WATER,
       'line-width': ['interpolate', ['linear'], ['zoom'], 9, 5, 14, 13],
-      'line-opacity': ['case', dimmed, 0.3, 0.9],
+      'line-opacity': ['case', dimmed, 0.2, 0.75],
     },
   },
   {
@@ -107,7 +106,7 @@ export const linkLayers: LayerSpecification[] = [
     source: 'links',
     filter: ['==', ['get', 'link_id'], ''],
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': INK, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 8, 14, 18] },
+    paint: { 'line-color': '#F2F6FA', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 8, 14, 18] },
   },
   {
     id: 'links-line',
@@ -117,7 +116,7 @@ export const linkLayers: LayerSpecification[] = [
     paint: {
       'line-color': congestionColor,
       'line-width': width(2),
-      'line-opacity': ['case', dimmed, 0.25, 1],
+      'line-opacity': ['case', dimmed, 0.22, 1],
     },
   },
   {
@@ -135,32 +134,28 @@ export const flowLayers: LayerSpecification[] = [
     type: 'circle',
     source: 'flow',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 1.1, 12, 1.8, 15, 3],
-      'circle-color': '#F1F3F5',
-      'circle-opacity': ['case', ['get', 'dim'], 0.12, 0.85],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 1.3, 12, 2, 15, 3.2],
+      'circle-color': '#EEF4FA',
+      'circle-opacity': ['case', ['get', 'dim'], 0.15, 0.9],
       'circle-pitch-alignment': 'map',
     },
   },
 ]
 
-const incidentColor: ExpressionSpecification = ['match', ['get', 'type'],
-  'PERSISTENT_CONGESTION', INCIDENT_COLORS.PERSISTENT_CONGESTION,
-  'SENSOR_SILENT', INCIDENT_COLORS.SENSOR_SILENT,
-  INCIDENT_COLORS.SPEED_DROP]
-
-// A solid pin in the incident's color on a dark rim; critical ones get a thin outer ring.
 export const incidentLayers: LayerSpecification[] = [
   {
     id: 'incident-ring',
     type: 'circle',
     source: 'incidents',
-    filter: ['==', ['get', 'severity'], 'CRITICAL'],
     paint: {
-      'circle-radius': 10,
+      'circle-radius': ['match', ['get', 'severity'], 'CRITICAL', 15, 'HIGH', 13, 11],
       'circle-color': 'transparent',
-      'circle-stroke-width': 1,
-      'circle-stroke-color': INK,
-      'circle-stroke-opacity': ['case', ['get', 'dim'], 0.1, 0.55],
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': ['match', ['get', 'type'],
+        'PERSISTENT_CONGESTION', INCIDENT_COLORS.PERSISTENT_CONGESTION,
+        'SENSOR_SILENT', INCIDENT_COLORS.SENSOR_SILENT,
+        INCIDENT_COLORS.SPEED_DROP],
+      'circle-stroke-opacity': ['case', ['get', 'dim'], 0.2, 0.75],
     },
   },
   {
@@ -168,12 +163,14 @@ export const incidentLayers: LayerSpecification[] = [
     type: 'circle',
     source: 'incidents',
     paint: {
-      'circle-radius': ['match', ['get', 'severity'], 'CRITICAL', 6, 'HIGH', 5.5, 4.5],
-      'circle-color': incidentColor,
+      'circle-radius': 5,
+      'circle-color': ['match', ['get', 'type'],
+        'PERSISTENT_CONGESTION', INCIDENT_COLORS.PERSISTENT_CONGESTION,
+        'SENSOR_SILENT', INCIDENT_COLORS.SENSOR_SILENT,
+        INCIDENT_COLORS.SPEED_DROP],
       'circle-opacity': ['case', ['get', 'dim'], 0.3, 1],
       'circle-stroke-width': 2,
-      'circle-stroke-color': CASING,
-      'circle-stroke-opacity': ['case', ['get', 'dim'], 0.3, 1],
+      'circle-stroke-color': WATER,
     },
   },
 ]

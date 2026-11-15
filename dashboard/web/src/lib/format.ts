@@ -17,13 +17,6 @@ export function formatDuration(seconds: number) {
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
-/** Compact form for table columns: "22m", "2h 50m". */
-export function formatDurationShort(seconds: number) {
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes}m`
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
-}
-
 const ACRONYMS = new Set(['NYST'])
 
 /** Title-case the all-caps DOT link names but keep road codes:
