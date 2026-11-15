@@ -59,7 +59,7 @@ Docker only: `DATA_START` (default `2026-10-01`) and `DATA_END` choose what is d
 
 ```sh
 docker build -t rnmp-producer producer
-docker run --rm --network rnmp_hw1_default -v "$PWD/data:/data" -e SPEEDUP=120 rnmp-producer
+docker run --rm --network <kafka network> -v "$PWD/data:/data" -e SPEEDUP=120 rnmp-producer
 ```
 
 ## How it works
