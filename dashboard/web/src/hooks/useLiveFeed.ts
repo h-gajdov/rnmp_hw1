@@ -19,11 +19,14 @@ export interface FeedHealth {
   status: ConnectionStatus
   messagesPerSecond: number
   lastMessageAt: number | null // wall clock ms
+  checkedAt: number // wall clock ms of the last health update
 }
 
 export function useLiveFeed() {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const [health, setHealth] = useState<FeedHealth>({ status: 'connecting', messagesPerSecond: 0, lastMessageAt: null })
+  const [health, setHealth] = useState<FeedHealth>({
+    status: 'connecting', messagesPerSecond: 0, lastMessageAt: null, checkedAt: 0,
+  })
   const arrivals = useRef<number[]>([]) // wall-clock arrival times, for the rate
 
   useEffect(() => {
@@ -60,6 +63,7 @@ export function useLiveFeed() {
         ...h,
         messagesPerSecond: recent.length / (RATE_WINDOW_MS / 1000),
         lastMessageAt: recent.length ? recent[recent.length - 1] : h.lastMessageAt,
+        checkedAt: now,
       }))
     }, 500)
 

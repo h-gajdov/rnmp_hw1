@@ -33,8 +33,10 @@ export function TrafficMap({ geojson, links, active, silent, selectedId, onSelec
   const container = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [hover, setHover] = useState<Hover | null>(null)
-  const onSelectRef = useRef(onSelect)
-  onSelectRef.current = onSelect
+  const onSelectRef = useRef(onSelect) // the map's click handler always calls the latest one
+  useEffect(() => {
+    onSelectRef.current = onSelect
+  }, [onSelect])
 
   // Create the map once, add our sources/layers when the basemap is loaded.
   useEffect(() => {

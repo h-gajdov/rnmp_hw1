@@ -17,7 +17,7 @@ function age(ms: number) {
 
 /** Shows that data is really streaming: connection, message rate, last message age. */
 export function LiveStatus({ health }: { health: FeedHealth }) {
-  const now = Date.now() // re-rendered twice a second by useLiveFeed
+  const now = health.checkedAt // refreshed twice a second by useLiveFeed
   const { tone, label } = describe(health, now)
   return (
     <div className={`live live--${tone}`} role="status">
