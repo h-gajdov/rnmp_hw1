@@ -51,7 +51,7 @@ Topic names are configurable via CLI flags in every module; the names above are 
   "speed_mph": 42.25,
   "travel_time_s": 60,
   "data_as_of": "2026-10-01T00:28:10.000",
-  "event_time": 1790829490000,
+  "event_time": 1790828890000,
   "sent_at": 1763215000123,
   "delayed": false
 }
@@ -109,13 +109,13 @@ sent this record out of order (debug / demo only, Flink must not rely on it).
 
 ```json
 {
-  "alert_id": "4616253-1790829490000-SPEED_DROP",
+  "alert_id": "4616253-1790828890000-SPEED_DROP",
   "type": "SPEED_DROP",
   "link_id": "4616253",
   "link_name": "CBE E TAYLOR AVENUE - CASTLE HILL AVENUE",
   "borough": "Bronx",
-  "event_time": 1790829490000,
-  "incident_start": 1790829490000,
+  "event_time": 1790828890000,
+  "incident_start": 1790828890000,
   "duration_s": 0,
   "speed_mph": 12.4,
   "baseline_mph": 44.0,
