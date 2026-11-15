@@ -2,8 +2,8 @@
 #
 #   docker compose up -d --build      # build the images and start everything
 #   docker compose logs -f producer   # follow one service
-#   docker compose down               # stop and remove (Kafka topics are not kept)
-#   docker compose down -v            # ... and also remove the volumes
+#   docker compose down               # stop and remove the containers (Kafka topics are not kept)
+#   docker compose down -v            # ... and also the empty anonymous volumes of the Kafka image
 #
 # Startup order (depends_on):
 #   kafka (healthy) ─► kafka-init (topics created) ─┬─► flink-job (job RUNNING) ─► producer
