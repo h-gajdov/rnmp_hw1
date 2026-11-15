@@ -22,8 +22,9 @@ Flink ──► Kafka topics ──► Python bridge ──Socket.IO (WebSocket)
 - **Web app** (`web/`, React + TypeScript + Vite): `useLiveFeed` holds the Socket.IO
   connection (auto-reconnect) and a reducer that mirrors the bridge state; incoming events
   are applied in 30 ms batches so a burst of 125 windows causes one render. The map is
-  MapLibre GL on the free CARTO Positron basemap (retinted: the region around the city in grey, the
-  boroughs as flat light land); link colors use feature state and fade over ~1 s to each new window.
+  MapLibre GL on the free CARTO Dark Matter basemap (retinted to neutral charcoal: the region around
+  the city recedes, the boroughs are flat graphite land a step lighter); link colors use feature state
+  and fade over ~1 s to each new window.
   Color is reserved for traffic: the four congestion levels, incident types and severities.
   The header shows the worst open incident (click it to open that road), the stream's event-time
   clock (New York time) and the connection health (Live / Reconnecting, messages per second, age of
