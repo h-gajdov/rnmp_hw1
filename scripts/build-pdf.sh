@@ -34,6 +34,7 @@ build() {
     @bottom-center { content: counter(page); font: 9pt "DejaVu Sans", sans-serif; color: #475569; }
   }
   body { font: 10.2pt/1.4 "DejaVu Sans", sans-serif; color: #18212b; }
+  html[lang="mk"] body { line-height: 1.33; }
   h1, h2, h3 { color: #15283c; line-height: 1.15; break-after: avoid; }
   h1 { font-size: 21pt; margin: 0 0 7pt; letter-spacing: -0.4pt; }
   h2 { font-size: 14pt; margin: 12pt 0 6pt; }
@@ -69,4 +70,4 @@ HTML
 }
 
 build DOCUMENTATION en 'Homework 1 - NYC traffic incident detection'
-build DOCUMENTATION.mk mk 'Домашна задача 1 - Детекција на сообраќајни инциденти во Њујорк'
+build DOCUMENTATION_mk mk 'Домашна задача 1 - Детекција на сообраќајни инциденти во Њујорк'

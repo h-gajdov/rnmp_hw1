@@ -12,10 +12,11 @@ import signal
 import sys
 import time
 
-from confluent_kafka import KafkaException, Producer
+from confluent_kafka import Consumer, KafkaError, KafkaException, Producer, TopicPartition
 from confluent_kafka.admin import AdminClient, NewTopic
 
-from replay import format_epoch_ms, load_readings, plan_schedule, shift_days, skip_until, parse_local
+from replay import (format_epoch_ms, load_readings, parse_local, plan_schedule, resume_round, shift_days,
+                    skip_until, unsent)
 
 
 def env(name, default, cast=str):
@@ -46,6 +47,9 @@ def parse_args(argv=None):
     a("--start-at", default=env("START_AT", None), help="skip to this NY time of day, HH:MM[:SS] [START_AT]")
     a("--loop", action="store_true", default=env("LOOP", False, bool),
       help="replay forever, shifting the data one day later each round [LOOP]")
+    a("--resume", action="store_true", default=env("RESUME", False, bool),
+      help="continue after the newest reading already in the topic instead of starting the data again;"
+           " an empty topic starts normally [RESUME]")
     a("--progress-s", type=float, default=env("PROGRESS_S", 5.0, float), help="seconds between progress lines [PROGRESS_S]")
     a("--kafka-wait-s", type=float, default=env("KAFKA_WAIT_S", 120.0, float),
       help="how long to wait for Kafka at startup [KAFKA_WAIT_S]")
@@ -86,6 +90,54 @@ def ensure_topic(admin: AdminClient, topic: str, partitions: int, timeout_s: flo
             raise
 
 
+def newest_in_topic(bootstrap: str, topic: str, max_delay_ms: int, timeout_s: float = 120.0):
+    """(newest event_time, {(link_id, event_time)} of the readings near it) in the topic, or None if it is empty.
+
+    The whole topic is read: after a restart without --resume the newest reading can be far from the end
+    (an older day replayed again behind it). Only readings less than `max_delay_ms` of event time older
+    than the newest one can have been released after it, so only their keys are kept.
+    """
+    consumer = Consumer({"bootstrap.servers": bootstrap, "group.id": "producer-resume",
+                         "enable.auto.commit": False, "enable.partition.eof": True})
+    try:
+        partitions = consumer.list_topics(topic, timeout=10).topics[topic].partitions
+        assignment = []
+        for p in partitions:
+            low, high = consumer.get_watermark_offsets(TopicPartition(topic, p), timeout=10)
+            if high > low:
+                assignment.append(TopicPartition(topic, p, low))
+        if not assignment:
+            return None
+        consumer.assign(assignment)
+
+        newest, sent = None, set()
+        open_partitions = {tp.partition for tp in assignment}
+        deadline = time.monotonic() + timeout_s
+        while open_partitions:
+            if time.monotonic() > deadline:
+                raise SystemExit(f"--resume: could not read {topic} within {timeout_s:.0f}s")
+            msg = consumer.poll(1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    open_partitions.discard(msg.partition())
+                    continue
+                raise KafkaException(msg.error())
+            try:
+                value = json.loads(msg.value())
+                key = (str(value["link_id"]), int(value["event_time"]))
+            except (ValueError, KeyError, TypeError):
+                continue  # not a reading of ours
+            sent.add(key)
+            newest = key[1] if newest is None else max(newest, key[1])
+        if newest is None:
+            return None
+        return newest, {key for key in sent if key[1] > newest - max_delay_ms}
+    finally:
+        consumer.close()
+
+
 # ---------------------------------------------------------------- replay loop
 
 class Stats:
@@ -107,28 +159,42 @@ class Stats:
         self.last_report = time.monotonic()
 
 
-def rounds(readings, args):
-    """Yield the schedule for each replay round (one round unless --loop)."""
-    first = skip_until(readings, args.start_at) if args.start_at else readings
-    days = (parse_local(readings[-1].data_as_of).date() - parse_local(readings[0].data_as_of).date()).days + 1
+def rounds(readings, args, resume=None):
+    """Yield the schedule for each replay round (one round unless --loop).
+
+    With `resume` = (newest event time, sent keys) from newest_in_topic(), the first round is the one
+    that contains the newest event time, without what was already sent; if that round is complete, the
+    next one. Without it, the first round is the data as it is (from --start-at).
+    """
+    first_day = parse_local(readings[0].data_as_of).date()
+    days = (parse_local(readings[-1].data_as_of).date() - first_day).days + 1
     max_delay_ms = int(args.max_delay_s * 1000)
-    n = 0
+    n = resume_round(first_day, days, resume[0]) if resume else 0
     while True:
-        batch = first if n == 0 else shift_days(readings, n * days)
-        yield plan_schedule(batch, args.disorder_ratio, max_delay_ms, seed=args.seed + n)
+        if n == 0 and args.start_at and not resume:
+            batch = skip_until(readings, args.start_at)
+        else:
+            batch = shift_days(readings, n * days)
+        schedule = plan_schedule(batch, args.disorder_ratio, max_delay_ms, seed=args.seed + n)
         n += 1
+        if resume:
+            schedule = unsent(schedule, *resume)
+            if not schedule:
+                continue  # that day was sent completely: start the next one
+            resume = None
+        yield schedule
         if not args.loop:
             return
 
 
-def replay(producer: Producer, readings, args, stats: Stats):
+def replay(producer: Producer, readings, args, stats: Stats, resume=None):
     def on_delivery(err, _msg):
         if err is not None:
             stats.failed += 1
 
     wall_start = None    # wall clock (monotonic) at the first record
     replay_start = None  # release time of the first record
-    for schedule in rounds(readings, args):
+    for schedule in rounds(readings, args, resume):
         for item in schedule:
             if args.limit and stats.sent >= args.limit:
                 return
@@ -181,11 +247,19 @@ def main(argv=None):
         f" up to {args.max_delay_s:g}s, seed {args.seed}")
 
     ensure_topic(AdminClient({"bootstrap.servers": args.bootstrap}), args.topic, args.partitions, args.kafka_wait_s)
+    resume = None
+    if args.resume:
+        resume = newest_in_topic(args.bootstrap, args.topic, int(args.max_delay_s * 1000))
+        if resume:
+            log(f"resuming after {format_epoch_ms(resume[0])}, the newest reading in {args.topic}"
+                + (" (--start-at ignored)" if args.start_at else ""))
+        else:
+            log(f"--resume: {args.topic} is empty, starting from the beginning")
     producer = Producer({"bootstrap.servers": args.bootstrap, "linger.ms": 20, "acks": "all"})
 
     stats = Stats()
     try:
-        replay(producer, readings, args, stats)
+        replay(producer, readings, args, stats, resume)
     except KeyboardInterrupt:
         log("interrupted, flushing ...")
     finally:

@@ -133,6 +133,7 @@ services:
       SEED: ${SEED:-42}
       LIMIT: ${LIMIT:-0}
       LOOP: ${LOOP:-false}                    # true = replay forever, one day later each round
+      RESUME: ${RESUME:-false}                # true = continue after the newest reading in the topic
     restart: "no"
 
   # Live dashboard (React + Python Socket.IO bridge) on http://localhost:${DASHBOARD_PORT}.

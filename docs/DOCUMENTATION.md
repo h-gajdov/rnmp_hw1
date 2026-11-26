@@ -64,6 +64,8 @@ The Python bridge consumes Kafka, sends a snapshot on connection, and pushes liv
 
 ## 7. Earliest versus latest offsets
 
+When a Flink job starts with `latest`, it reads new records as they arrive in Kafka and skips records already in the topic. With `earliest`, the job starts at the oldest record still available in the topic and processes both the existing records and new records as they arrive.
+
 Both runs used fresh topics, four partitions, Flink parallelism of two, and the same seeded sequence of **21,073 input readings**. For `--offset latest`, the job started first and the producer replayed at 600×. For `--offset earliest`, the producer loaded the full day at maximum speed in 0.2 seconds before the job started.
 
 In the paced `latest` run, the first output arrived **1.0 seconds** after the first Kafka input record and the last arrived at **144.0 seconds**. In the `earliest` run, which processed the backlog, the first output came **2.9 seconds** after job submission and the last at **4.4 seconds**. That measurement includes job startup.

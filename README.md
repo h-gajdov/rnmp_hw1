@@ -69,6 +69,7 @@ Useful settings (environment variables or a `.env` file, all listed in [`.env.ex
 ```sh
 START_AT=06:00 SPEEDUP=120 docker compose up -d --build   # start at the morning rush hour: alerts within ~2 min
 LOOP=true docker compose up -d --build                    # replay forever (each round one day later)
+RESUME=true LOOP=true docker compose up -d producer       # restart the producer where the topic stopped
 FLINK_OFFSET=earliest docker compose up -d --build        # the job reads the input topic from the beginning
 FLINK_MAX_OOO_S=30 docker compose up -d --build           # watermark bound 30 s < producer delay 120 s:
                                                           #   late readings appear in traffic-late-readings
@@ -170,7 +171,7 @@ producer/.venv/bin/python producer/producer.py --input data/traffic.csv --speedu
 ```
 
 `producer/run.sh [flags]` does the same with automatic venv setup and download. Flags: `--speedup`,
-`--disorder-ratio` (default 0.1), `--max-delay-s` (default 120), `--seed`, `--start-at`, `--limit`, `--loop`,
+`--disorder-ratio` (default 0.1), `--max-delay-s` (default 120), `--seed`, `--start-at`, `--limit`, `--loop`, `--resume`,
 `--bootstrap` (see [`producer/README.md`](producer/README.md)).
 
 ### 5. Look at the results

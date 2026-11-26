@@ -167,3 +167,23 @@ def plan_schedule(readings: list, disorder_ratio: float, max_delay_ms: int, seed
     # sort() is stable: ties keep the original (event-time) order.
     planned.sort(key=lambda s: s.release_time)
     return planned
+
+
+# ---------------------------------------------------------------- resuming
+
+def resume_round(first_day, days: int, newest_ms: int) -> int:
+    """The replay round (0 = the data as it is, n = shifted n * days later) that contains `newest_ms`,
+    the newest event time already in the topic. Data older than the CSV gives round 0."""
+    newest_day = datetime.fromtimestamp(newest_ms / 1000, NY).date()
+    return max(0, (newest_day - first_day).days // days)
+
+
+def unsent(schedule: list, newest_ms: int, sent: set) -> list:
+    """The part of a round's schedule that a previous run has not sent yet.
+
+    Everything released up to `newest_ms` went out before the newest record in the topic did. A held-back
+    record released after it may also be out already: `sent` holds the (link_id, event_time) pairs read
+    from the end of the topic, so such a record is not sent twice.
+    """
+    return [s for s in schedule
+            if s.release_time > newest_ms and (s.reading.link_id, s.reading.event_time) not in sent]

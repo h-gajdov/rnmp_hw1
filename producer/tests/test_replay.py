@@ -5,7 +5,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from replay import Reading, clean_rows, plan_schedule, shift_days, skip_until, to_epoch_ms  # noqa: E402
+from replay import (Reading, Scheduled, clean_rows, plan_schedule, resume_round, shift_days, skip_until,  # noqa: E402
+                    to_epoch_ms, unsent)
 
 
 def row(link_id="4616253", speed="42.25", status="0", data_as_of="2026-10-01T00:28:10.000", travel_time="60"):
@@ -111,3 +112,31 @@ def test_seed_makes_schedule_deterministic():
     c = plan_schedule(READINGS, 0.2, 120_000, seed=6)
     assert a == b
     assert a != c
+
+
+# ---------------------------------------------------------------- resuming
+
+def test_resume_round_is_the_day_of_the_newest_reading():
+    from datetime import date
+    first = date(2026, 10, 1)
+    assert resume_round(first, 1, to_epoch_ms("2026-10-01T14:00:00.000")) == 0
+    assert resume_round(first, 1, to_epoch_ms("2026-10-03T00:05:00.000")) == 2
+    assert resume_round(first, 2, to_epoch_ms("2026-10-03T00:05:00.000")) == 1   # two-day CSV
+    assert resume_round(first, 1, to_epoch_ms("2026-09-20T10:00:00.000")) == 0   # older data in the topic
+
+
+def test_unsent_skips_what_went_out_before_the_newest_reading():
+    newest = 1000
+    schedule = [
+        Scheduled(reading(900, "a"), 900, False),       # released before the newest: sent
+        Scheduled(reading(950, "b"), 1050, True),       # held back, already in the topic
+        Scheduled(reading(980, "c"), 1080, True),       # held back, not sent yet
+        Scheduled(reading(1100, "d"), 1100, False),     # later: not sent yet
+    ]
+    left = unsent(schedule, newest, sent={("a", 900), ("b", 950)})
+    assert [s.reading.link_id for s in left] == ["c", "d"]
+
+
+def test_unsent_of_a_finished_day_is_empty():
+    schedule = [Scheduled(reading(t, str(t)), t, False) for t in (100, 200, 300)]
+    assert unsent(schedule, 300, sent={("300", 300)}) == []

@@ -51,6 +51,7 @@ Every flag can also be set with the environment variable in brackets (used by Do
 | `--limit` [`LIMIT`] | `0` (all) | stop after N records |
 | `--start-at` [`START_AT`] | – | skip to a NY time of day, e.g. `07:00` |
 | `--loop` [`LOOP=true`] | off | replay forever, each round shifted one day later |
+| `--resume` [`RESUME=true`] | off | continue after the newest reading already in the topic (see below) |
 | `--progress-s` [`PROGRESS_S`] | `5` | seconds between progress lines |
 | `--kafka-wait-s` [`KAFKA_WAIT_S`] | `120` | how long to retry until Kafka is reachable |
 
@@ -75,6 +76,12 @@ docker run --rm --network <kafka network> -v "$PWD/data:/data" -e SPEEDUP=120 rn
    measured from the start, so records with the same timestamp go out together and there is no drift.
 5. **Kafka.** Key = `link_id` (all readings of a link land in the same partition), value = contract JSON.
    Ctrl+C / `docker stop` flushes the pending messages before exiting.
+6. **Resume** (`--resume`). Without it every run starts at the first day of the CSV. If the topic already
+   holds a later moment (a previous run), the Flink watermark is past it and every new reading is late.
+   With `--resume` the producer first reads the whole topic, takes the newest `event_time`, and starts
+   with the round (the data shifted by whole days, as with `--loop`) that contains it, skipping what
+   was sent already. If that day is complete, it starts on the next day. `--start-at` is ignored then;
+   an empty topic starts normally.
 
 ### Relation to the Flink watermark
 
