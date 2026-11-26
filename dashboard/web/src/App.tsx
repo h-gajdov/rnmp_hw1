@@ -136,7 +136,14 @@ export default function App() {
       />
 
       <aside className="side">
-        <FlowPanel boroughs={state.boroughs} history={state.history} links={state.links} silent={state.silent} />
+        <FlowPanel
+          boroughs={state.boroughs}
+          history={state.history}
+          links={state.links}
+          silent={state.silent}
+          readingsTotal={state.readingsTotal}
+          lateTotal={state.lateTotal}
+        />
         <IncidentCounters counts={state.counts} />
         <ActiveIncidents
           active={state.active}

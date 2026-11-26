@@ -12,11 +12,13 @@ interface Props {
   history: Record<string, LinkPoint[]>
   links: Record<string, LinkStats>
   silent: Record<string, Incident>
+  readingsTotal: number // all readings received so far
+  lateTotal: number // readings Flink split off as late (behind the watermark)
 }
 
 const HOUR_WINDOWS = 12 // 12 x 5-minute windows
 
-export function FlowPanel({ boroughs, history, links, silent }: Props) {
+export function FlowPanel({ boroughs, history, links, silent, readingsTotal, lateTotal }: Props) {
   const series = useMemo(() => networkSeries(boroughs), [boroughs])
   const mixes = useMemo(() => levelMix(history), [history])
 
@@ -58,6 +60,7 @@ export function FlowPanel({ boroughs, history, links, silent }: Props) {
           <dt>Sensor reports</dt>
           <dd className="kpi__value">{now ? now.readings : '--'}</dd>
           <dd className="kpi__sub">in the 5 min to {now ? formatClock(now.t) : '--:--'}</dd>
+          <dd className="kpi__sub">{readingsTotal.toLocaleString('en-US')} total, {lateTotal.toLocaleString('en-US')} late</dd>
         </div>
       </dl>
 
