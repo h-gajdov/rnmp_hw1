@@ -14,6 +14,7 @@ interface Props {
 
 const SWITCHES: { group: LayerGroup; label: string; hint: string }[] = [
   { group: 'flow', label: 'Traffic flow', hint: 'Dots move along each road at its measured speed' },
+  { group: 'pulses', label: 'Sensor reports', hint: 'A ring on a road each time one of its readings arrives (live only)' },
   { group: 'incidents', label: 'Incidents', hint: 'Open incidents and silent sensors' },
   { group: 'boroughs', label: 'Boroughs', hint: 'Borough areas; click one to focus it' },
 ]

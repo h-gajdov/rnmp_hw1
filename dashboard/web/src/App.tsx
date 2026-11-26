@@ -21,7 +21,7 @@ const PLAY_DELAY_MS = 120 // pause between 5-minute steps once a step has loaded
 export default function App() {
   const geojson = useLinks()
   const boroughShapes = useBoroughShapes()
-  const { state: live, health } = useLiveFeed()
+  const { state: live, health, onReading } = useLiveFeed()
   const timeline = useTimeline()
   const [at, setAt] = useState<number | null>(null) // null = live
   const [playing, setPlaying] = useState(false)
@@ -31,7 +31,9 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusBorough, setFocusBorough] = useState<string | null>(null)
   const [hoverBorough, setHoverBorough] = useState<string | null>(null)
-  const [layers, setLayers] = useState<Record<LayerGroup, boolean>>({ flow: true, incidents: true, boroughs: true })
+  const [layers, setLayers] = useState<Record<LayerGroup, boolean>>({
+    flow: true, pulses: true, incidents: true, boroughs: true,
+  })
 
   const start = timeline?.start ?? 0
   const end = Math.max(timeline?.end ?? 0, live.eventClock)
@@ -102,6 +104,8 @@ export default function App() {
             hoverBorough={hoverBorough}
             onHoverBorough={setHoverBorough}
             layers={layers}
+            onReading={onReading}
+            live={at === null}
           />
         ) : (
           <div className="map map--loading">

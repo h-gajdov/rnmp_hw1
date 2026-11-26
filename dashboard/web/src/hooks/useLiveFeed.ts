@@ -4,14 +4,20 @@
 // - after that each Kafka message arrives as its own event
 // - events are applied in small batches (one every FLUSH_MS) so a burst of
 //   125 link windows causes one React render instead of 125
-import { useEffect, useReducer, useRef, useState } from 'react'
+// - raw readings are also handed straight to subscribers (the map's pulses),
+//   outside React state, so they cost no render
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { initialState, reducer, type FeedEvent } from '../state/dashboard'
-import type { Snapshot } from '../types'
+import type { Reading, Snapshot } from '../types'
 
 const FLUSH_MS = 30
 const RATE_WINDOW_MS = 5000
 const EVENT_KINDS = ['link_stats', 'borough_stats', 'incident', 'reading', 'late_reading'] as const
+
+export type ReadingListener = (reading: Reading) => void
+/** Registers a listener for on-time readings as they arrive; returns the unsubscribe function. */
+export type ReadingSubscribe = (listener: ReadingListener) => () => void
 
 export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting'
 
@@ -28,6 +34,12 @@ export function useLiveFeed() {
     status: 'connecting', messagesPerSecond: 0, lastMessageAt: null, checkedAt: 0,
   })
   const arrivals = useRef<number[]>([]) // wall-clock arrival times, for the rate
+  const readingListeners = useRef(new Set<ReadingListener>())
+
+  const onReading = useCallback<ReadingSubscribe>((listener) => {
+    readingListeners.current.add(listener)
+    return () => { readingListeners.current.delete(listener) }
+  }, [])
 
   useEffect(() => {
     const socket = io({ transports: ['websocket'] }) // reconnects automatically
@@ -51,6 +63,7 @@ export function useLiveFeed() {
         queue.push({ kind, msg } as FeedEvent)
         arrivals.current.push(Date.now())
         timer ??= window.setTimeout(flush, FLUSH_MS)
+        if (kind === 'reading') for (const listener of readingListeners.current) listener(msg as Reading)
       })
     }
 
@@ -74,5 +87,5 @@ export function useLiveFeed() {
     }
   }, [])
 
-  return { state, health }
+  return { state, health, onReading }
 }

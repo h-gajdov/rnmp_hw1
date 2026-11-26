@@ -7,11 +7,14 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useFlowAnimation } from '../hooks/useFlowAnimation'
+import type { ReadingSubscribe } from '../hooks/useLiveFeed'
+import { useReadingPulses } from '../hooks/useReadingPulses'
 import { useRatioTween } from '../hooks/useRatioTween'
 import { boroughColor, LABEL_OVERRIDES, type BoroughGeoJson } from '../lib/boroughs'
 import { buildFlowPaths } from '../lib/flow'
 import {
-  BASEMAP, BELOW_ROADS, boroughLayers, flowLayers, incidentLayers, LAYER_GROUPS, linkLayers, restyleBasemap,
+  BASEMAP, BELOW_ROADS, boroughLayers, flowLayers, incidentLayers, LAYER_GROUPS, linkLayers, pulseLayers,
+  restyleBasemap,
   type LayerGroup,
 } from '../lib/mapLayers'
 import type { BoroughStats, Incident, LinkStats, LinksGeoJson } from '../types'
@@ -31,6 +34,8 @@ interface Props {
   hoverBorough: string | null
   onHoverBorough: (borough: string | null) => void
   layers: Record<LayerGroup, boolean>
+  onReading: ReadingSubscribe
+  live: boolean // false while a past moment is shown: no pulses then
 }
 
 // Let Vite serve/bundle MapLibre's web worker as a plain file.
@@ -64,7 +69,7 @@ const framePadding = (el: HTMLElement): PaddingOptions =>
 export function TrafficMap(props: Props) {
   const {
     geojson, boroughShapes, boroughNow, links, active, silent, selectedId,
-    focusBorough, hoverBorough, layers,
+    focusBorough, hoverBorough, layers, onReading, live,
   } = props
   const container = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<MapLibreMap | null>(null)
@@ -91,8 +96,9 @@ export function TrafficMap(props: Props) {
       restyleBasemap(m)
       m.addSource('links', { type: 'geojson', data: geojson, promoteId: 'link_id' })
       m.addSource('flow', { type: 'geojson', data: EMPTY })
+      m.addSource('pulses', { type: 'geojson', data: EMPTY })
       m.addSource('incidents', { type: 'geojson', data: EMPTY })
-      for (const layer of [...linkLayers, ...flowLayers, ...incidentLayers]) m.addLayer(layer)
+      for (const layer of [...linkLayers, ...flowLayers, ...pulseLayers, ...incidentLayers]) m.addLayer(layer)
 
       let lastBorough: string | null = null
       const setBoroughHover = (name: string | null) => {
@@ -226,6 +232,9 @@ export function TrafficMap(props: Props) {
   useEffect(() => {
     if (map && !layers.flow) map.getSource<GeoJSONSource>('flow')?.setData(EMPTY)
   }, [map, layers.flow])
+
+  // A ring on a road whenever one of its readings arrives (live view only).
+  useReadingPulses(map, geojson, onReading, focusBorough, live && layers.pulses)
 
   // One marker in the middle of every link with an open incident or a silent sensor.
   useEffect(() => {

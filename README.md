@@ -17,8 +17,11 @@ Everything starts with one `docker compose up`.
 
 ![Live dashboard](docs/img/dashboard.png)
 
-Documentation (dataset, architecture, both modules, watermarks, earliest/latest comparison):
-[`docs/DOCUMENTATION.pdf`](docs/DOCUMENTATION.pdf) (source: [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md)).
+Project documentation covers the dataset, architecture, both modules, watermarks, and the offset comparison.
+
+- English ([PDF](docs/DOCUMENTATION.pdf), [Markdown](docs/DOCUMENTATION.md))
+- Македонски ([PDF](docs/DOCUMENTATION.mk.pdf), [Markdown](docs/DOCUMENTATION.mk.md))
+
 Message formats of every topic: [`docs/CONTRACT.md`](docs/CONTRACT.md).
 
 ## Repository layout
@@ -31,7 +34,7 @@ Message formats of every topic: [`docs/CONTRACT.md`](docs/CONTRACT.md).
 | `docker-compose.yml`, `.env.example` | the whole stack with one command, and its settings |
 | `scripts/consume.sh` | print a topic / count the messages of every topic in the compose Kafka |
 | `scripts/offset-experiment.sh` | the earliest vs latest experiment (+ `offset_experiment_report.py`) |
-| `scripts/build-pdf.sh` | `docs/DOCUMENTATION.md` → `docs/DOCUMENTATION.pdf` |
+| `scripts/build-pdf.sh` | Builds both documentation PDFs from Markdown |
 | `docs/` | documentation, message contract, architecture diagram |
 
 The data is not in the repository; it is downloaded into `data/` (see below).
@@ -222,5 +225,5 @@ cd dashboard/web && npm run build && cd ../..            # UI type check + produ
 
 ## Documentation
 
-`docs/DOCUMENTATION.pdf` is built from `docs/DOCUMENTATION.md` with `scripts/build-pdf.sh`
-(python-markdown via `uvx` + headless Google Chrome).
+Run `scripts/build-pdf.sh` to rebuild both PDFs from the Markdown files in `docs/`.
+The script uses Python-Markdown (available through `uvx`) and headless Chrome or Chromium.

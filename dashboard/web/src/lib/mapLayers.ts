@@ -142,6 +142,28 @@ export const flowLayers: LayerSpecification[] = [
   },
 ]
 
+// One ring per arriving sensor reading; useReadingPulses sets p (0 -> 1 over the
+// ring's life) and grow (what the radius follows; fixed for reduced motion).
+const pulseAge: ExpressionSpecification = ['to-number', ['get', 'p'], 1]
+const pulseFade: ExpressionSpecification = ['-', 1, pulseAge]
+
+export const pulseLayers: LayerSpecification[] = [
+  {
+    id: 'reading-pulse',
+    type: 'circle',
+    source: 'pulses',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['to-number', ['get', 'grow'], 1], 0, 3, 1, 16],
+      'circle-color': '#EEF4FA',
+      'circle-opacity': ['*', pulseFade, ['case', ['get', 'dim'], 0.03, 0.14]],
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#EEF4FA',
+      'circle-stroke-opacity': ['*', pulseFade, ['case', ['get', 'dim'], 0.2, 0.8]],
+      'circle-pitch-alignment': 'map',
+    },
+  },
+]
+
 export const incidentLayers: LayerSpecification[] = [
   {
     id: 'incident-ring',
@@ -178,6 +200,7 @@ export const incidentLayers: LayerSpecification[] = [
 /** Layer groups the viewer can switch on and off. */
 export const LAYER_GROUPS = {
   flow: flowLayers.map((l) => l.id),
+  pulses: pulseLayers.map((l) => l.id),
   boroughs: boroughLayers.map((l) => l.id),
   incidents: incidentLayers.map((l) => l.id),
 } as const
