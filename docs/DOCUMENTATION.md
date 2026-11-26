@@ -1,6 +1,6 @@
 # Homework 1 - NYC traffic incident detection
 
-**Изработил: Христијан Гајдов 231119**
+**Author: Hristijan Gajdov 231119**
 
 ## 1. Dataset and partition key
 
