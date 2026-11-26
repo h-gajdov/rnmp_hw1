@@ -27,6 +27,8 @@ public class BoroughStatsWindowFunction
         stats.maxSpeedMph = round(acc.maxSpeed, 2);
         stats.slowReadings = acc.slowReadings;
         stats.slowShare = round((double) acc.slowReadings / acc.readings, 3);
+        stats.fastReadings = acc.fastReadings;
+        stats.fastShare = round((double) acc.fastReadings / acc.readings, 3);
         out.collect(stats);
     }
 }

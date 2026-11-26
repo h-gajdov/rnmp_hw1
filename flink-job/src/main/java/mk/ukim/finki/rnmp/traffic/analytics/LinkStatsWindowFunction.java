@@ -57,6 +57,7 @@ public class LinkStatsWindowFunction
         stats.freeFlowMph = round(freeFlow, 2);
         stats.congestionRatio = round(ratio, 3);
         stats.level = levelOf(ratio);
+        stats.maxTravelTimeS = acc.maxTravelTimeS;
         out.collect(stats);
     }
 

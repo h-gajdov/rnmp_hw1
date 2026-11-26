@@ -15,6 +15,7 @@ public class LinkWindowStats {
     public double avgTravelTimeS;
     public double freeFlowMph;
     public double congestionRatio;
+    public double maxTravelTimeS;
     /** FREE, MODERATE, HEAVY or SEVERE. */
     public String level;
 

@@ -22,6 +22,8 @@ public class LinkStatsAggregator
         acc.minSpeed = Math.min(acc.minSpeed, reading.speedMph);
         acc.maxSpeed = Math.max(acc.maxSpeed, reading.speedMph);
         acc.sumTravelTime += reading.travelTimeS;
+        acc.maxTravelTimeS = Math.max(reading.travelTimeS, acc.maxTravelTimeS);
+        System.out.println(acc.maxTravelTimeS);
         return acc;
     }
 
@@ -43,6 +45,7 @@ public class LinkStatsAggregator
         a.minSpeed = Math.min(a.minSpeed, b.minSpeed);
         a.maxSpeed = Math.max(a.maxSpeed, b.maxSpeed);
         a.sumTravelTime += b.sumTravelTime;
+        a.maxTravelTimeS = Math.max(a.maxTravelTimeS, b.maxTravelTimeS);
         return a;
     }
 }

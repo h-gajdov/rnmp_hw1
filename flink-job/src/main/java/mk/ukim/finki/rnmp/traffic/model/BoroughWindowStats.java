@@ -13,6 +13,8 @@ public class BoroughWindowStats {
     public double maxSpeedMph;
     public long slowReadings;
     public double slowShare;
+    public long fastReadings;
+    public double fastShare;
 
     public BoroughWindowStats() {
     }

@@ -89,7 +89,7 @@ public class TrafficIncidentJob {
 
         DataStream<BoroughWindowStats> boroughStats = readings
                 .keyBy(r -> r.borough == null ? "Unknown" : r.borough)
-                .window(TumblingEventTimeWindows.of(BOROUGH_WINDOW_SIZE))
+                .window(SlidingEventTimeWindows.of(Duration.ofMinutes(10), Duration.ofMinutes(5)))
                 .aggregate(new BoroughStatsAggregator(), new BoroughStatsWindowFunction())
                 .name("Borough stats (tumbling 5m)").uid("borough-stats");
         boroughStats.sinkTo(KafkaFactory.jsonSink(config.bootstrap(), config.boroughStatsTopic(), s -> s.borough))

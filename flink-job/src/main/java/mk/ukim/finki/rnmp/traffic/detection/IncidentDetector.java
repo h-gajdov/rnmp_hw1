@@ -84,7 +84,9 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
         s.incidentMinSpeedMph = reading.speedMph;
         s.readingsAboveRecovery = 0;
         s.persistentTimer = reading.eventTime + settings.persistentMs();
+        s.longIncidentTimer = reading.eventTime + 60_000 * 60;
         ctx.timerService().registerEventTimeTimer(s.persistentTimer);
+        ctx.timerService().registerEventTimeTimer(s.longIncidentTimer);
 
         double ratio = reading.speedMph / s.baselineMph;
         out.collect(alert(AlertType.SPEED_DROP, ctx.getCurrentKey(), s, reading.eventTime, reading.speedMph,
@@ -118,6 +120,10 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
             ctx.timerService().deleteEventTimeTimer(s.persistentTimer);
             s.persistentTimer = 0;
         }
+        if (s.longIncidentTimer != 0) {                   // the incident is over: no 60-min check either
+            ctx.timerService().deleteEventTimeTimer(s.longIncidentTimer);
+            s.longIncidentTimer = 0;
+        }
         s.phase = Phase.NORMAL;
         s.readingsAboveRecovery = 0;
     }
@@ -135,6 +141,10 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
         if (timestamp == s.silenceTimer) {
             reportSilence(s, ctx.getCurrentKey(), out);
         }
+
+        if(timestamp == s.longIncidentTimer) {
+            checkLongIncident(s, ctx.getCurrentKey(), out);
+        }
         linkState.update(s);
     }
 
@@ -151,10 +161,27 @@ public class IncidentDetector extends KeyedProcessFunction<String, TrafficReadin
             ctx.timerService().deleteEventTimeTimer(s.persistentTimer);
             checkPersistent(s, linkId, out);
         }
+        if (s.longIncidentTimer != 0 && eventTime >= s.longIncidentTimer) {    // NEW
+            ctx.timerService().deleteEventTimeTimer(s.longIncidentTimer);
+            checkLongIncident(s, linkId, out);
+        }
+
         if (s.silenceTimer != 0 && eventTime >= s.silenceTimer) {
             ctx.timerService().deleteEventTimeTimer(s.silenceTimer);
             reportSilence(s, linkId, out);
         }
+
+
+    }
+
+    private void checkLongIncident(LinkState s, String linkId, Collector<IncidentAlert> out) {
+            long time = s.longIncidentTimer;
+            s.longIncidentTimer = 0;
+            if(s.phase == Phase.CONGESTED) {
+                IncidentAlert silent = alert(AlertType.LONG_INCIDENT, linkId, s, time, s.lastSpeedMph, Severity.MEDIUM,
+                    String.format(Locale.ROOT, "LONG INCIDENT MESSAGE"));
+                out.collect(silent);
+            }
     }
 
     /**

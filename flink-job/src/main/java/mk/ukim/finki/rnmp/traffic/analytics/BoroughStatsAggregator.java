@@ -8,7 +8,8 @@ public class BoroughStatsAggregator
         implements AggregateFunction<TrafficReading, BoroughStatsAccumulator, BoroughStatsAccumulator> {
 
     /** A reading below this speed counts as "slow" (contract: speed_mph &lt; 15). */
-    static final double SLOW_MPH = 15.0;
+    static final double SLOW_MPH = 20.0;
+    static final double FAST_MPH = 50.0;
 
     @Override
     public BoroughStatsAccumulator createAccumulator() {
@@ -23,6 +24,10 @@ public class BoroughStatsAggregator
         acc.maxSpeed = Math.max(acc.maxSpeed, reading.speedMph);
         if (reading.speedMph < SLOW_MPH) {
             acc.slowReadings++;
+        }
+
+        if (reading.speedMph > FAST_MPH) {
+            acc.fastReadings++;
         }
         acc.linkIds.add(reading.linkId);
         return acc;
@@ -41,6 +46,7 @@ public class BoroughStatsAggregator
         a.maxSpeed = Math.max(a.maxSpeed, b.maxSpeed);
         a.slowReadings += b.slowReadings;
         a.linkIds.addAll(b.linkIds);
+        a.fastReadings += b.fastReadings;
         return a;
     }
 }

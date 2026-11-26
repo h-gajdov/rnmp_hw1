@@ -24,6 +24,7 @@ public class LinkState {
     // registered event-time timers (0 = none), remembered so they can be deleted or recognized in onTimer
     public long persistentTimer;
     public long silenceTimer;
+    public long longIncidentTimer;
 
     public LinkState() {
     }

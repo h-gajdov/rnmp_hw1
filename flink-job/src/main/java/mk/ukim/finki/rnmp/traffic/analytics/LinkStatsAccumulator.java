@@ -14,6 +14,7 @@ public class LinkStatsAccumulator {
     public double minSpeed = Double.MAX_VALUE;
     public double maxSpeed = -Double.MAX_VALUE;
     public double sumTravelTime;
+    public double maxTravelTimeS = -Double.MAX_VALUE;
 
     public LinkStatsAccumulator() {
     }

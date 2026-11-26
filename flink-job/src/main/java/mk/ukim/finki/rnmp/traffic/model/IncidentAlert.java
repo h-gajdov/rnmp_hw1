@@ -20,7 +20,7 @@ public class IncidentAlert {
     public IncidentAlert() {
     }
 
-    public enum AlertType { SPEED_DROP, PERSISTENT_CONGESTION, RECOVERY, SENSOR_SILENT }
+    public enum AlertType { SPEED_DROP, PERSISTENT_CONGESTION, RECOVERY, SENSOR_SILENT, LONG_INCIDENT }
 
     public enum Severity { LOW, MEDIUM, HIGH, CRITICAL }
 
